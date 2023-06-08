@@ -10,6 +10,13 @@ module hamsterpocket::pocket {
     use aptos_framework::resource_account;
     use std::error;
     use aptos_framework::account::SignerCapability;
+    use std::string::{Self, String};
+
+    // use internal modules
+    use hamsterpocket::platform;
+
+    // declare friends module
+    friend hamsterpocket::chef;
 
     // define Pocket status
     const STATUS_ACTIVE: u64 = 0x0;
@@ -55,6 +62,7 @@ module hamsterpocket::pocket {
     const NOT_EXISTED_ID: u64 = 0x8;
     const INVALID_POCKET_STATE: u64 = 0x9;
     const INVALID_SIGNER: u64 = 0x10;
+    const INVALID_TARGET: u64 = 0x11;
 
     // define value comparison
     struct ValueComparision has copy, store, drop {
@@ -78,7 +86,7 @@ module hamsterpocket::pocket {
     // define pocket struct
     struct Pocket has copy, drop, store {
         // pool identity fields
-        id: vector<u8>,
+        id: String,
         status: u64,
         owner: address,
 
@@ -116,18 +124,19 @@ module hamsterpocket::pocket {
 
     // define pocket store which stores user accounts
     struct PocketStore has key {
-        pockets: table_with_length::TableWithLength<vector<u8>, Pocket>,
+        pockets: table_with_length::TableWithLength<String, Pocket>,
         signer_cap: SignerCapability
     }
 
     // define account resource store
     struct ResourceAccountStore has key {
-        signer_map: table_with_length::TableWithLength<vector<u8>, address>,
+        signer_map: table_with_length::TableWithLength<String, address>,
         deployer_signer_cap: account::SignerCapability
     }
 
+    // define create pocket params
     struct CreatePocketParams has drop, copy {
-        id: vector<u8>,
+        id: String,
         base_token_address: address,
         target_token_address: address,
         amm: u64,
@@ -140,8 +149,9 @@ module hamsterpocket::pocket {
         auto_close_condition: AutoCloseCondition,
     }
 
+    // define update pocket params
     struct UpdatePocketParams has drop, copy {
-        id: vector<u8>,
+        id: String,
         start_at: u64,
         frequency: u64,
         batch_volume: u64,
@@ -149,6 +159,50 @@ module hamsterpocket::pocket {
         stop_loss_condition: TradingStopCondition,
         take_profit_condition: TradingStopCondition,
         auto_close_condition: AutoCloseCondition,
+    }
+
+    // define update status params
+    struct UpdateStatusParams has drop, copy {
+        id: String,
+        actor: address,
+        status: u64,
+        reason: String
+    }
+
+    // define update trading stats params
+    struct UpdateTradingStatsParams has drop, copy {
+        id: String,
+        actor: address,
+        swapped_base_token_amount: u64,
+        received_target_token_amount: u64,
+        reason: String
+    }
+
+    // define update close position params
+    struct UpdateClosePositionParams has drop, copy {
+        id: String,
+        actor: address,
+        swapped_target_token_amount: u64,
+        received_base_token_amount: u64,
+        reason: String
+    }
+
+    // define update pocket deposit params
+    struct UpdateDepositStatsParams has drop, copy {
+        id: String,
+        actor: address,
+        amount: u64,
+        token_address: u64,
+        reason: String
+    }
+
+    // define udpate withdrawal stats params
+    struct UpdateWithdrawalStatsParams has drop, copy {
+        id: String,
+        actor: address,
+        amount: u64,
+        token_address: u64,
+        reason: String
     }
 
     // create resource signer during module initialization
@@ -159,7 +213,7 @@ module hamsterpocket::pocket {
         move_to(
             &resource_signer,
             ResourceAccountStore {
-                signer_map: table_with_length::new<vector<u8>, address>(),
+                signer_map: table_with_length::new<String, address>(),
                 deployer_signer_cap
             }
         );
@@ -182,7 +236,7 @@ module hamsterpocket::pocket {
             move_to(
                 &resource_signer,
                 PocketStore {
-                    pockets: table_with_length::new<vector<u8>, Pocket>(),
+                    pockets: table_with_length::new<String, Pocket>(),
                     signer_cap
                 }
             );
@@ -235,7 +289,7 @@ module hamsterpocket::pocket {
         let pocket = &mut get_pocket(params.id);
 
         // make sure the pocket is able to udpate
-        assert!(is_able_to_update(pocket, signer), error::invalid_state(INVALID_POCKET_STATE));
+        assert!(is_able_to_update(params.id, signer), error::invalid_state(INVALID_POCKET_STATE));
 
         // now we assign pocket data from params
         pocket.frequency = params.frequency;
@@ -257,47 +311,114 @@ module hamsterpocket::pocket {
         validate_pocket(pocket);
     }
 
+    // close pocket on behalf of owner
+    public(friend) fun mark_as_closed(pocket_id: String, signer: &signer) acquires PocketStore, ResourceAccountStore {
+        // extract pocket
+        let pocket = &mut get_pocket(pocket_id);
+
+        // make sure the pocket is able to close
+        assert!(is_able_to_close(pocket_id, signer), error::invalid_state(INVALID_POCKET_STATE));
+
+        pocket.status = STATUS_CLOSED;
+    }
+
+    // restart pocket on behalf of owner
+    public(friend) fun mark_as_active(pocket_id: String, signer: &signer) acquires PocketStore, ResourceAccountStore {
+        // extract pocket
+        let pocket = &mut get_pocket(pocket_id);
+
+        // make sure the pocket is able to restart
+        assert!(is_able_to_restart(pocket_id, signer), error::invalid_state(INVALID_POCKET_STATE));
+
+        pocket.status = STATUS_ACTIVE;
+    }
+
+    // pause pocket on behalf of owner
+    public(friend) fun mark_as_paused(pocket_id: String, signer: &signer) acquires PocketStore, ResourceAccountStore {
+        // extract pocket
+        let pocket = &mut get_pocket(pocket_id);
+
+        // make sure the pocket is able to pause
+        assert!(is_able_to_pause(pocket_id, signer), error::invalid_state(INVALID_POCKET_STATE));
+
+        pocket.status = STATUS_PAUSED;
+    }
+
     // check whether the pocket is able to deposit
-    public(friend) fun is_able_to_deposit(pocket: &Pocket, signer: &signer): bool {
+    public(friend) fun is_able_to_deposit(
+        pocket_id: String,
+        signer: &signer
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
         return is_owner_of(pocket, signer) &&
             pocket.status != STATUS_CLOSED &&
             pocket.status != STATUS_WITHDRAWN
     }
 
     // check whether the pocket is able to update
-    public(friend) fun is_able_to_update(pocket: &Pocket, signer: &signer): bool {
+    public(friend) fun is_able_to_update(
+        pocket_id: String,
+        signer: &signer
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
         return is_owner_of(pocket, signer) &&
             pocket.status != STATUS_CLOSED &&
             pocket.status != STATUS_WITHDRAWN
     }
 
     // check whether the pocket is able to update
-    public(friend) fun is_able_to_close(pocket: &Pocket, signer: &signer): bool {
+    public(friend) fun is_able_to_close(
+        pocket_id: String,
+        signer: &signer
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
         return is_owner_of(pocket, signer) &&
             pocket.status != STATUS_CLOSED &&
             pocket.status != STATUS_WITHDRAWN
     }
 
     // check whether the pocket is able to update
-    public(friend) fun is_able_to_pause(pocket: &Pocket, signer: &signer): bool {
+    public(friend) fun is_able_to_pause(
+        pocket_id: String,
+        signer: &signer
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
         return is_owner_of(pocket, signer) &&
             pocket.status == STATUS_ACTIVE
     }
 
     // check whether the pocket is able to update
-    public(friend) fun is_able_to_restart(pocket: &Pocket, signer: &signer): bool {
+    public(friend) fun is_able_to_restart(
+        pocket_id: String,
+        signer: &signer
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
         return is_owner_of(pocket, signer) &&
             pocket.status == STATUS_PAUSED
     }
 
     // check whether the pocket is able to update
-    public(friend) fun is_able_to_withdraw(pocket: &Pocket, signer: &signer): bool {
+    public(friend) fun is_able_to_withdraw(
+        pocket_id: String,
+        signer: &signer
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
         return is_owner_of(pocket, signer) &&
             pocket.status == STATUS_CLOSED
     }
 
     // check whether the pocket is able to update
-    public(friend) fun is_ready_to_swap(pocket: &Pocket): bool {
+    public(friend) fun is_ready_to_swap(
+        pocket_id: String
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
         return pocket.status == STATUS_ACTIVE &&
             pocket.base_token_balance >= pocket.batch_volume &&
             pocket.start_at <= timestamp::now_seconds() &&
@@ -305,14 +426,18 @@ module hamsterpocket::pocket {
     }
 
     // check whether the pocket is able to update
-    public(friend) fun is_ready_to_close_position(pocket: &Pocket): bool {
+    public(friend) fun is_ready_to_close_position(
+        pocket_id: String
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
         return pocket.status != STATUS_WITHDRAWN &&
             pocket.target_token_balance > 0 &&
             pocket.start_at <= timestamp::now_seconds()
     }
 
     // get pocket
-    fun get_pocket(pocket_id: vector<u8>): Pocket acquires PocketStore, ResourceAccountStore {
+    fun get_pocket(pocket_id: String): Pocket acquires PocketStore, ResourceAccountStore {
         // let's find the resource signer of the pocket
         let resource_signer = &get_pocket_resource_signer(pocket_id);
 
@@ -329,7 +454,6 @@ module hamsterpocket::pocket {
             error::not_found(NOT_EXISTED_ID)
         );
 
-
         // extract pocket
         let pocket = table_with_length::borrow(pockets, pocket_id);
 
@@ -343,7 +467,7 @@ module hamsterpocket::pocket {
     }
 
     // get pocket resource signer
-    fun get_pocket_resource_signer(pocket_id: vector<u8>): signer acquires PocketStore, ResourceAccountStore {
+    fun get_pocket_resource_signer(pocket_id: String): signer acquires PocketStore, ResourceAccountStore {
         let signer_map = &borrow_global<ResourceAccountStore>(@hamsterpocket).signer_map;
 
         // make sure the system must be knowing the signer of the pocket
@@ -369,7 +493,7 @@ module hamsterpocket::pocket {
     // init an empty pocket
     fun create_empty(owner: address): Pocket {
         Pocket {
-            id: b"",
+            id: string::utf8(b""),
             status: STATUS_ACTIVE,
             owner,
             base_token_address: @0x0,
@@ -397,11 +521,21 @@ module hamsterpocket::pocket {
 
     // check whether the pocket is valid
     fun validate_pocket(pocket: &Pocket) {
-        assert!(pocket.id != b"", error::invalid_state(EMPTY_ID));
+        assert!(pocket.id != string::utf8(b""), error::invalid_state(EMPTY_ID));
 
         assert!(pocket.owner != @0x0, error::invalid_state(ZERO_ADDRESS));
+
         assert!(pocket.base_token_address != @0x0, error::invalid_state(ZERO_ADDRESS));
+        assert!(
+            platform::is_allowed_target(pocket.base_token_address),
+            error::permission_denied(INVALID_TARGET)
+        );
+
         assert!(pocket.target_token_address != @0x0, error::invalid_state(ZERO_ADDRESS));
+        assert!(
+            platform::is_allowed_target(pocket.target_token_address),
+            error::permission_denied(INVALID_TARGET)
+        );
 
         assert!(pocket.amm == AMM_PCS, error::invalid_state(INVALID_AMM));
         assert!(pocket.start_at > 0, error::invalid_state(ZERO_VALUE));

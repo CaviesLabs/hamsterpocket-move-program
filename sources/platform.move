@@ -1,7 +1,9 @@
-module hamsterpocket::platfrom {
+module hamsterpocket::platform {
     use aptos_framework::resource_account;
     use aptos_framework::account;
     use aptos_std::table_with_length;
+
+    friend hamsterpocket::pocket;
 
     // Binding deployer
     const DEPLOYER: address = @deployer;
@@ -24,14 +26,6 @@ module hamsterpocket::platfrom {
             allowed_operators: table_with_length::new(),
             allowed_interactive_targets: table_with_length::new(),
         });
-    }
-
-    // get resource signer
-    public(friend) fun get_resource_signer(): signer acquires PlatformConfig {
-        let config = borrow_global_mut<PlatformConfig>(HAMSTERPOCKET);
-        let resource_signer = account::create_signer_with_capability(&config.deployer_capibility);
-
-        return resource_signer
     }
 
     // enable interactive target

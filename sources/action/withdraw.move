@@ -1,1 +1,0 @@
-module hamsterpocket::withdraw {}
