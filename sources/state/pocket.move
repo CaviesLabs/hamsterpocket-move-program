@@ -176,6 +176,9 @@ module hamsterpocket::pocket {
         let signer_cap = resource_account::retrieve_resource_account_cap(signer, address_of(signer));
         let resource_signer = account::create_signer_with_capability(&signer_cap); // this is the same with signer
 
+        // assert valid signer
+        assert!(&resource_signer == signer, error::permission_denied(INVALID_SIGNER));
+
         // if pocket store does not exists, we create one
         if (!exists<PocketStore>(address_of(signer))) {
             move_to(
