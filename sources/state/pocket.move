@@ -5,7 +5,6 @@ module hamsterpocket::pocket {
     use aptos_std::table_with_length;
     use aptos_framework::timestamp;
     use std::signer;
-    use std::string;
     use std::signer::address_of;
     use aptos_framework::account;
     use aptos_framework::resource_account;
@@ -117,7 +116,7 @@ module hamsterpocket::pocket {
 
     // define pocket store which stores user accounts
     struct PocketStore has key {
-        pockets: table_with_length::TableWithLength<string::String, Pocket>,
+        pockets: table_with_length::TableWithLength<vector<u8>, Pocket>,
         signer_cap: SignerCapability
     }
 
@@ -183,7 +182,7 @@ module hamsterpocket::pocket {
             move_to(
                 &resource_signer,
                 PocketStore {
-                    pockets: table_with_length::new<string::String, Pocket>(),
+                    pockets: table_with_length::new<vector<u8>, Pocket>(),
                     signer_cap
                 }
             );
@@ -196,9 +195,9 @@ module hamsterpocket::pocket {
 
         // we prevent duplicated id to be added to the table
         assert!(
-            !table_with_length::contains<string::String, Pocket>(
+            !table_with_length::contains(
                 pockets,
-                string::utf8(params.id)
+                params.id
             ),
             DUPLICATED_ID
         );
@@ -224,7 +223,7 @@ module hamsterpocket::pocket {
         validate_pocket(pocket);
 
         // now we add to store
-        table_with_length::add(pockets, string::utf8(params.id), *pocket);
+        table_with_length::add(pockets, params.id, *pocket);
     }
 
     // create pocket
@@ -323,16 +322,16 @@ module hamsterpocket::pocket {
 
         // we check if the pocket id existed
         assert!(
-            table_with_length::contains<string::String, Pocket>(
+            table_with_length::contains(
                 pockets,
-                string::utf8(pocket_id)
+                pocket_id
             ),
             error::not_found(NOT_EXISTED_ID)
         );
 
 
         // extract pocket
-        let pocket = table_with_length::borrow(pockets, string::utf8(pocket_id));
+        let pocket = table_with_length::borrow(pockets, pocket_id);
 
         // we check if owner matches with signer
         assert!(
