@@ -82,7 +82,6 @@ module hamsterpocket::pocket {
         id: vector<u8>,
         status: u64,
         owner: address,
-        resource_owner: address,
 
         // trading info fields
         base_token_address: address,
@@ -219,7 +218,6 @@ module hamsterpocket::pocket {
         pocket.auto_close_condition = params.auto_close_condition;
 
         // compute other state
-        pocket.resource_owner = address_of(&resource_signer);
         pocket.next_scheduled_execution_at = params.start_at;
 
         // validate pocket
@@ -329,11 +327,20 @@ module hamsterpocket::pocket {
                 pockets,
                 string::utf8(pocket_id)
             ),
-            NOT_EXISTED_ID
+            error::not_found(NOT_EXISTED_ID)
         );
 
+
         // extract pocket
-        *table_with_length::borrow_mut(pockets, string::utf8(pocket_id))
+        let pocket = table_with_length::borrow(pockets, string::utf8(pocket_id));
+
+        // we check if owner matches with signer
+        assert!(
+            pocket.owner == address_of(resource_signer),
+            error::permission_denied(INVALID_SIGNER)
+        );
+
+        return *pocket
     }
 
     // get pocket resource signer
@@ -366,7 +373,6 @@ module hamsterpocket::pocket {
             id: b"",
             status: STATUS_ACTIVE,
             owner,
-            resource_owner: @0x0,
             base_token_address: @0x0,
             target_token_address: @0x0,
             amm: AMM_PCS, // currently we only support PCS as default
@@ -392,17 +398,16 @@ module hamsterpocket::pocket {
 
     // check whether the pocket is valid
     fun validate_pocket(pocket: &Pocket) {
-        assert!(pocket.id != b"", EMPTY_ID);
+        assert!(pocket.id != b"", error::invalid_state(EMPTY_ID));
 
-        assert!(pocket.owner != @0x0, ZERO_ADDRESS);
-        assert!(pocket.resource_owner != @0x0, ZERO_ADDRESS);
-        assert!(pocket.base_token_address != @0x0, ZERO_ADDRESS);
-        assert!(pocket.target_token_address != @0x0, ZERO_ADDRESS);
+        assert!(pocket.owner != @0x0, error::invalid_state(ZERO_ADDRESS));
+        assert!(pocket.base_token_address != @0x0, error::invalid_state(ZERO_ADDRESS));
+        assert!(pocket.target_token_address != @0x0, error::invalid_state(ZERO_ADDRESS));
 
-        assert!(pocket.amm == AMM_PCS, INVALID_AMM);
-        assert!(pocket.start_at > 0, ZERO_VALUE);
-        assert!(pocket.frequency > 0, ZERO_VALUE);
-        assert!(pocket.batch_volume > 0, ZERO_VALUE);
+        assert!(pocket.amm == AMM_PCS, error::invalid_state(INVALID_AMM));
+        assert!(pocket.start_at > 0, error::invalid_state(ZERO_VALUE));
+        assert!(pocket.frequency > 0, error::invalid_state(ZERO_VALUE));
+        assert!(pocket.batch_volume > 0, error::invalid_state(ZERO_VALUE));
 
         validate_open_position_condition(&pocket.open_position_condition);
         validate_trading_stop_condition(&pocket.stop_loss_condition);
@@ -418,38 +423,38 @@ module hamsterpocket::pocket {
     // check whether the open position condition is valid
     fun validate_open_position_condition(comparison: &ValueComparision) {
         // valid operator must be less than 0x7
-        assert!(comparison.operator <= 0x7, INVALID_VALUE);
+        assert!(comparison.operator <= 0x7, error::invalid_state(INVALID_VALUE));
 
         // won't check if user unset the condition
         if (comparison.operator == UNSET) return;
 
         if (comparison.operator == OPERATOR_BW || comparison.operator == OPERATOR_NBW) {
-            assert!(comparison.value_x >= comparison.value_y, INVALID_VALUE);
-            assert!(comparison.value_y > 0, ZERO_VALUE);
+            assert!(comparison.value_x >= comparison.value_y, error::invalid_state(INVALID_VALUE));
+            assert!(comparison.value_y > 0, error::invalid_state(ZERO_VALUE));
             return
         };
 
-        assert!(comparison.value_x > 0, ZERO_VALUE);
+        assert!(comparison.value_x > 0, error::invalid_state(ZERO_VALUE));
     }
 
     // check whether the open position condition is valid
     fun validate_trading_stop_condition(stop_condition: &TradingStopCondition) {
         // valid operator must be less than 0x2
-        assert!(stop_condition.stopped_with <= 0x2, INVALID_VALUE);
+        assert!(stop_condition.stopped_with <= 0x2, error::invalid_state(INVALID_VALUE));
 
         // validate
         if (stop_condition.stopped_with == UNSET) return;
-        assert!(stop_condition.value > 0, ZERO_VALUE);
+        assert!(stop_condition.value > 0, error::invalid_state(error::invalid_state(INVALID_VALUE)));
     }
 
     // check whether the open position condition is valid
     fun validate_auto_close_condition(condition: &AutoCloseCondition) {
         // valid operator must be less than 0x3
-        assert!(condition.closed_with <= 0x4, INVALID_VALUE);
+        assert!(condition.closed_with <= 0x4, error::invalid_state(INVALID_VALUE));
 
         // validate
         if (condition.closed_with == UNSET) return;
-        assert!(condition.value > 0, ZERO_VALUE);
+        assert!(condition.value > 0, error::invalid_state(ZERO_VALUE));
     }
 }
 
