@@ -32,18 +32,18 @@ module hamsterpocket::pocket {
 
     // define value comparision operation
     const OPERATOR_EQ: u64 = 0x1;
-    const OPERATOR_NEQ: u64 = 0x1;
-    const OPERATOR_GT: u64 = 0x2;
-    const OPERATOR_GTE: u64 = 0x3;
-    const OPERATOR_LT: u64 = 0x4;
-    const OPERATOR_LTE: u64 = 0x5;
-    const OPERATOR_BW: u64 = 0x6;
-    const OPERATOR_NBW: u64 = 0x7;
+    const OPERATOR_NEQ: u64 = 0x2;
+    const OPERATOR_GT: u64 = 0x3;
+    const OPERATOR_GTE: u64 = 0x4;
+    const OPERATOR_LT: u64 = 0x5;
+    const OPERATOR_LTE: u64 = 0x6;
+    const OPERATOR_BW: u64 = 0x7;
+    const OPERATOR_NBW: u64 = 0x8;
 
     // define trading stop condition
-    const STOPPED_WITH_PRICE: u64 = 0x0;
-    const STOPPED_WITH_PORTFOLIO_VALUE_DIFF: u64 = 0x1;
-    const STOPPED_WITH_PORTFOLIO_PERCENT_DIFF: u64 = 0x2;
+    const STOPPED_WITH_PRICE: u64 = 0x1;
+    const STOPPED_WITH_PORTFOLIO_VALUE_DIFF: u64 = 0x2;
+    const STOPPED_WITH_PORTFOLIO_PERCENT_DIFF: u64 = 0x3;
 
     // define conditional auto close pocket
     const CLOSED_WITH_END_TIME: u64 = 0x1;
@@ -555,8 +555,8 @@ module hamsterpocket::pocket {
 
     // check whether the open position condition is valid
     fun validate_open_position_condition(comparison: &ValueComparision) {
-        // valid operator must be less than 0x7
-        assert!(comparison.operator <= 0x7, error::invalid_state(INVALID_VALUE));
+        // valid operator must be less than 0x8
+        assert!(comparison.operator <= 0x8, error::invalid_state(INVALID_VALUE));
 
         // won't check if user unset the condition
         if (comparison.operator == UNSET) return;
@@ -572,8 +572,8 @@ module hamsterpocket::pocket {
 
     // check whether the open position condition is valid
     fun validate_trading_stop_condition(stop_condition: &TradingStopCondition) {
-        // valid operator must be less than 0x2
-        assert!(stop_condition.stopped_with <= 0x2, error::invalid_state(INVALID_VALUE));
+        // valid operator must be less than 0x3
+        assert!(stop_condition.stopped_with <= 0x3, error::invalid_state(INVALID_VALUE));
 
         // validate
         if (stop_condition.stopped_with == UNSET) return;
@@ -582,7 +582,7 @@ module hamsterpocket::pocket {
 
     // check whether the open position condition is valid
     fun validate_auto_close_condition(condition: &AutoCloseCondition) {
-        // valid operator must be less than 0x3
+        // valid operator must be less than 0x4
         assert!(condition.closed_with <= 0x4, error::invalid_state(INVALID_VALUE));
 
         // validate
