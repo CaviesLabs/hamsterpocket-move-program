@@ -7,7 +7,6 @@ module hamsterpocket::pocket {
     use std::signer;
     use std::signer::address_of;
     use aptos_framework::account;
-    use aptos_framework::resource_account;
     use std::error;
     use aptos_framework::account::SignerCapability;
     use std::string::{Self, String};
@@ -17,6 +16,8 @@ module hamsterpocket::pocket {
 
     // declare friends module
     friend hamsterpocket::chef;
+
+    const POCKET_ACCOUNT_SEED: vector<u8> = b"HAMSTERPOCKET::ACCOUNT_SEED";
 
     // define Pocket status
     const STATUS_ACTIVE: u64 = 0x0;
@@ -112,8 +113,8 @@ module hamsterpocket::pocket {
         total_swapped_base_amount: u64,
         total_received_target_amount: u64,
 
-        total_closed_position_in_target_token_amount: u64,
-        total_received_fund_in_base_token_amount: u64,
+        total_closed_position_in_target_amount: u64,
+        total_received_fund_in_base_amount: u64,
 
         base_token_balance: u64,
         target_token_balance: u64,
@@ -125,13 +126,12 @@ module hamsterpocket::pocket {
     // define pocket store which stores user accounts
     struct PocketStore has key {
         pockets: table_with_length::TableWithLength<String, Pocket>,
-        signer_cap: SignerCapability
+        signer_cap: SignerCapability,
     }
 
     // define account resource store
     struct ResourceAccountStore has key {
-        signer_map: table_with_length::TableWithLength<String, address>,
-        deployer_signer_cap: account::SignerCapability
+        owner_map: table_with_length::TableWithLength<String, address>,
     }
 
     // define create pocket params
@@ -205,16 +205,12 @@ module hamsterpocket::pocket {
         reason: String
     }
 
-    // create resource signer during module initialization
-    fun init_module(deployer: &signer) {
-        let deployer_signer_cap = resource_account::retrieve_resource_account_cap(deployer, @hamsterpocket);
-        let resource_signer = account::create_signer_with_capability(&deployer_signer_cap);
-
+    // initialize
+    public(friend) fun initialize(resource_signer: &signer) {
         move_to(
-            &resource_signer,
+            resource_signer,
             ResourceAccountStore {
-                signer_map: table_with_length::new<String, address>(),
-                deployer_signer_cap
+                owner_map: table_with_length::new<String, address>(),
             }
         );
     }
@@ -224,25 +220,27 @@ module hamsterpocket::pocket {
         signer: &signer,
         params: CreatePocketParams
     ) acquires PocketStore, ResourceAccountStore {
-        let signer_map = &mut borrow_global_mut<ResourceAccountStore>(@hamsterpocket).signer_map;
-        let signer_cap = resource_account::retrieve_resource_account_cap(signer, address_of(signer));
-        let resource_signer = account::create_signer_with_capability(&signer_cap); // this is the same with signer
-
-        // assert valid signer
-        assert!(&resource_signer == signer, error::permission_denied(INVALID_SIGNER));
+        let owner_map = &mut borrow_global_mut<ResourceAccountStore>(@hamsterpocket).owner_map;
 
         // if pocket store does not exists, we create one
         if (!exists<PocketStore>(address_of(signer))) {
+            // create resource account for user
+            let (_, signer_cap) = account::create_resource_account(
+                signer,
+                POCKET_ACCOUNT_SEED,
+            );
+
             move_to(
-                &resource_signer,
+                signer,
                 PocketStore {
                     pockets: table_with_length::new<String, Pocket>(),
                     signer_cap
                 }
             );
-
-            table_with_length::add(signer_map, params.id, address_of(signer));
         };
+
+        // now we map signer for better query
+        table_with_length::add(owner_map, params.id, address_of(signer));
 
         let store = borrow_global_mut<PocketStore>(address_of(signer));
         let pockets = &mut store.pockets;
@@ -309,6 +307,59 @@ module hamsterpocket::pocket {
 
         // validate pocket
         validate_pocket(pocket);
+    }
+
+    // update withdrawal stats
+    public(friend) fun update_withdrawal_statss(
+        params: UpdateDepositStatsParams
+    ) acquires PocketStore, ResourceAccountStore {
+        let pocket = &mut get_pocket(params.id);
+
+        pocket.base_token_balance = 0;
+        pocket.target_token_balance = 0;
+        pocket.status = STATUS_WITHDRAWN;
+    }
+
+    // update deposit stats
+    public(friend) fun update_deposit_stats(
+        params: UpdateDepositStatsParams
+    ) acquires PocketStore, ResourceAccountStore {
+        let pocket = &mut get_pocket(params.id);
+
+        pocket.total_deposited_base_amount = params.amount;
+        pocket.base_token_balance = pocket.base_token_balance + params.amount
+    }
+
+    // update close position stats
+    public(friend) fun update_close_position_stats(
+        params: UpdateClosePositionParams
+    ) acquires PocketStore, ResourceAccountStore {
+        let pocket = &mut get_pocket(params.id);
+
+        // update stats
+        pocket.total_closed_position_in_target_amount = pocket.total_closed_position_in_target_amount + params.swapped_target_token_amount;
+        pocket.total_received_fund_in_base_amount = pocket.total_received_fund_in_base_amount + params.received_base_token_amount;
+
+        // update balance
+        pocket.base_token_balance = pocket.base_token_balance + params.received_base_token_amount;
+        pocket.target_token_balance = pocket.target_token_balance - params.swapped_target_token_amount;
+    }
+
+    // update trading stats
+    public(friend) fun update_trading_stats(
+        params: UpdateTradingStatsParams
+    ) acquires PocketStore, ResourceAccountStore {
+        let pocket = &mut get_pocket(params.id);
+
+        // update trading epoch stats
+        pocket.next_scheduled_execution_at = timestamp::now_seconds() + pocket.frequency;
+        pocket.executed_batch_amount = pocket.executed_batch_amount + 1;
+
+        // compute trading status
+        pocket.total_swapped_base_amount = pocket.total_swapped_base_amount + params.swapped_base_token_amount;
+        pocket.total_received_target_amount = pocket.total_received_target_amount + params.received_target_token_amount;
+        pocket.base_token_balance = pocket.base_token_balance - params.swapped_base_token_amount;
+        pocket.target_token_balance = pocket.target_token_balance + params.received_target_token_amount;
     }
 
     // close pocket on behalf of owner
@@ -437,12 +488,12 @@ module hamsterpocket::pocket {
     }
 
     // get pocket
-    fun get_pocket(pocket_id: String): Pocket acquires PocketStore, ResourceAccountStore {
+    public(friend) fun get_pocket(pocket_id: String): Pocket acquires PocketStore, ResourceAccountStore {
         // let's find the resource signer of the pocket
-        let resource_signer = &get_pocket_resource_signer(pocket_id);
+        let (_, owner_address) = get_pocket_signer_resource(pocket_id);
 
         // now we query the pocket
-        let store = borrow_global_mut<PocketStore>(address_of(resource_signer));
+        let store = borrow_global_mut<PocketStore>(owner_address);
         let pockets = &mut store.pockets;
 
         // we check if the pocket id existed
@@ -459,35 +510,40 @@ module hamsterpocket::pocket {
 
         // we check if owner matches with signer
         assert!(
-            pocket.owner == address_of(resource_signer),
+            pocket.owner == owner_address,
             error::permission_denied(INVALID_SIGNER)
         );
 
+        // return pocket
         return *pocket
     }
 
+
     // get pocket resource signer
-    fun get_pocket_resource_signer(pocket_id: String): signer acquires PocketStore, ResourceAccountStore {
-        let signer_map = &borrow_global<ResourceAccountStore>(@hamsterpocket).signer_map;
+    fun get_pocket_signer_resource(pocket_id: String): (signer, address) acquires PocketStore, ResourceAccountStore {
+        let owner_map = &borrow_global<ResourceAccountStore>(@hamsterpocket).owner_map;
 
         // make sure the system must be knowing the signer of the pocket
         assert!(
             table_with_length::contains(
-                signer_map,
+                owner_map,
                 pocket_id
             ),
             error::not_found(INVALID_VALUE)
         );
 
         // extract signer cap
+        let owner = table_with_length::borrow(owner_map, pocket_id);
+
         let signer_cap = &borrow_global<PocketStore>(
-            *table_with_length::borrow(signer_map, pocket_id)
+            *(copy owner)
         ).signer_cap;
 
         // now we convert to signer
         let resource_signer = account::create_signer_with_capability(signer_cap);
 
-        return resource_signer
+        // return address
+        return (resource_signer, *owner)
     }
 
     // init an empty pocket
@@ -510,8 +566,8 @@ module hamsterpocket::pocket {
             total_deposited_base_amount: 0,
             total_swapped_base_amount: 0,
             total_received_target_amount: 0,
-            total_closed_position_in_target_token_amount: 0,
-            total_received_fund_in_base_token_amount: 0,
+            total_closed_position_in_target_amount: 0,
+            total_received_fund_in_base_amount: 0,
             base_token_balance: 0,
             target_token_balance: 0,
             executed_batch_amount: 0,

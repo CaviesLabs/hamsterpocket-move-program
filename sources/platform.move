@@ -1,12 +1,12 @@
 module hamsterpocket::platform {
-    use aptos_framework::resource_account;
     use aptos_framework::account;
     use aptos_std::table_with_length;
+    use aptos_framework::account::SignerCapability;
 
+    friend hamsterpocket::chef;
     friend hamsterpocket::pocket;
 
     // Binding deployer
-    const DEPLOYER: address = @deployer;
     const HAMSTERPOCKET: address = @hamsterpocket;
 
     // here we define the platform config
@@ -17,15 +17,22 @@ module hamsterpocket::platform {
     }
 
     // init module will be called automatically whenever the module is published
-    fun init_module(signer: &signer) {
-        let signer_cap = resource_account::retrieve_resource_account_cap(signer, DEPLOYER);
-        let resource_signer = account::create_signer_with_capability(&signer_cap);
-
-        move_to(&resource_signer, PlatformConfig {
+    public(friend) fun initialize(
+        resource_signer: &signer,
+        signer_cap: SignerCapability
+    ) {
+        move_to(resource_signer, PlatformConfig {
             deployer_capibility: signer_cap,
             allowed_operators: table_with_length::new(),
             allowed_interactive_targets: table_with_length::new(),
         });
+    }
+
+    // get resource signer
+    public(friend) fun get_resource_signer(): signer acquires PlatformConfig {
+        let config = borrow_global<PlatformConfig>(HAMSTERPOCKET);
+        let resource_signer = account::create_signer_with_capability(&config.deployer_capibility);
+        return resource_signer
     }
 
     // enable interactive target
