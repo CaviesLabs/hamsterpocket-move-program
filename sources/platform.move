@@ -3,6 +3,7 @@ module hamsterpocket::platform {
     use aptos_std::table_with_length;
     use aptos_framework::account::SignerCapability;
     use std::signer::address_of;
+    use std::error;
 
     friend hamsterpocket::chef;
     friend hamsterpocket::pocket;
@@ -38,12 +39,18 @@ module hamsterpocket::platform {
     }
 
     // check whether the signer is admin
-    public(friend) fun is_admin(signer: &signer): bool acquires PlatformConfig {
+    public(friend) fun is_admin(signer: &signer, raise_error: bool): bool acquires PlatformConfig {
         let config = borrow_global<PlatformConfig>(HAMSTERPOCKET);
-        return *table_with_length::borrow(
+        let result = *table_with_length::borrow(
             &config.allowed_admins,
             address_of(signer)
-        )
+        );
+
+        if (raise_error) {
+            assert!(result, error::permission_denied(INVALID_ADMIN));
+        };
+
+        return result
     }
 
     // get resource signer

@@ -4,7 +4,6 @@ module hamsterpocket::chef {
     use aptos_framework::account;
     use aptos_framework::code;
 
-    use std::error;
     use std::string;
 
     use hamsterpocket::pocket;
@@ -37,10 +36,7 @@ module hamsterpocket::chef {
         metadata_serialized: vector<u8>,
         code: vector<vector<u8>>
     ) {
-        assert!(
-            platform::is_admin(sender),
-            error::permission_denied(INVALID_ADMIN)
-        );
+        platform::is_admin(sender, true);
 
         let resource_signer = platform::get_resource_signer();
         code::publish_package_txn(&resource_signer, metadata_serialized, code);
