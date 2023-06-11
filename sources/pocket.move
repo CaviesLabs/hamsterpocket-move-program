@@ -68,20 +68,20 @@ module hamsterpocket::pocket {
     // define value comparison
     struct ValueComparision has copy, store, drop {
         operator: u64,
-        value_x: u64,
-        value_y: u64,
+        value_x: u256,
+        value_y: u256,
     }
 
     // define trading stop condition struct
     struct TradingStopCondition has copy, store, drop {
         stopped_with: u64,
-        value: u64,
+        value: u256,
     }
 
     // define auto close condition struct
     struct AutoCloseCondition has copy, store, drop {
         closed_with: u64,
-        value: u64
+        value: u256
     }
 
     // define pocket struct
@@ -102,24 +102,24 @@ module hamsterpocket::pocket {
         frequency: u64,
 
         // trading conditional fields
-        batch_volume: u64,
+        batch_volume: u256,
         open_position_condition: ValueComparision,
         stop_loss_condition: TradingStopCondition,
         take_profit_condition: TradingStopCondition,
         auto_close_condition: AutoCloseCondition,
 
         // statistic fields are not inserted during pocket creation, but pocket operation
-        total_deposited_base_amount: u64,
-        total_swapped_base_amount: u64,
-        total_received_target_amount: u64,
+        total_deposited_base_amount: u256,
+        total_swapped_base_amount: u256,
+        total_received_target_amount: u256,
 
-        total_closed_position_in_target_amount: u64,
-        total_received_fund_in_base_amount: u64,
+        total_closed_position_in_target_amount: u256,
+        total_received_fund_in_base_amount: u256,
 
-        base_token_balance: u64,
-        target_token_balance: u64,
+        base_token_balance: u256,
+        target_token_balance: u256,
 
-        executed_batch_amount: u64,
+        executed_batch_amount: u256,
         next_scheduled_execution_at: u64
     }
 
@@ -142,7 +142,7 @@ module hamsterpocket::pocket {
         amm: u64,
         start_at: u64,
         frequency: u64,
-        batch_volume: u64,
+        batch_volume: u256,
         open_position_condition: ValueComparision,
         stop_loss_condition: TradingStopCondition,
         take_profit_condition: TradingStopCondition,
@@ -154,7 +154,7 @@ module hamsterpocket::pocket {
         id: String,
         start_at: u64,
         frequency: u64,
-        batch_volume: u64,
+        batch_volume: u256,
         open_position_condition: ValueComparision,
         stop_loss_condition: TradingStopCondition,
         take_profit_condition: TradingStopCondition,
@@ -173,8 +173,8 @@ module hamsterpocket::pocket {
     struct UpdateTradingStatsParams has drop, copy {
         id: String,
         actor: address,
-        swapped_base_token_amount: u64,
-        received_target_token_amount: u64,
+        swapped_base_token_amount: u256,
+        received_target_token_amount: u256,
         reason: String
     }
 
@@ -182,8 +182,8 @@ module hamsterpocket::pocket {
     struct UpdateClosePositionParams has drop, copy {
         id: String,
         actor: address,
-        swapped_target_token_amount: u64,
-        received_base_token_amount: u64,
+        swapped_target_token_amount: u256,
+        received_base_token_amount: u256,
         reason: String
     }
 
@@ -191,8 +191,8 @@ module hamsterpocket::pocket {
     struct UpdateDepositStatsParams has drop, copy {
         id: String,
         actor: address,
-        amount: u64,
-        token_address: u64,
+        amount: u256,
+        token_address: u256,
         reason: String
     }
 
@@ -200,8 +200,8 @@ module hamsterpocket::pocket {
     struct UpdateWithdrawalStatsParams has drop, copy {
         id: String,
         actor: address,
-        amount: u64,
-        token_address: u64,
+        amount: u256,
+        token_address: u256,
         reason: String
     }
 

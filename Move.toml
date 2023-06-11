@@ -1,7 +1,7 @@
 [package]
 name = "hamsterpocket"
 version = "0.0.1"
-upgrade_policy = 'compatible'
+upgrade_policy = "compatible"
 
 [dependencies]
 AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "72421d32d77f1877ded478e96f5b95914de1df91" }
@@ -9,5 +9,5 @@ AptosStdlib = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "
 AptosToken = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-token/", rev = "72421d32d77f1877ded478e96f5b95914de1df91" }
 
 [addresses]
-hamsterpocket = "e915ef9376df621dc2e542237909b22afe274129ac041c440c948b13c0bb9471"
-deployer = "a47681ce676b1302c53ad10a410c09eb4868b4b9084314e8326833b6fee3cdd3"
+hamsterpocket = "93978b7674234c90003f608e7f33856c652edcaeb8280584ae44c61ea1b2539a"
+deployer = "1e5320d3a1a12f28c22a52b62a3815cbf0efc49020089d350454f1d3fd53fd90"
