@@ -52,7 +52,7 @@ module hamsterpocket::pocket {
     const CLOSED_WITH_SPENT_BASE_AMOUNT: u64 = 0x3;
     const CLOSED_WITH_RECEIVED_TARGET_AMOUNT: u64 = 0x4;
 
-    // define errors
+    // define input errors
     const INVALID_TIMESTAMP: u64 = 0x1;
     const ZERO_ADDRESS: u64 = 0x2;
     const EMPTY_ID: u64 = 0x3;
@@ -64,6 +64,16 @@ module hamsterpocket::pocket {
     const INVALID_POCKET_STATE: u64 = 0x9;
     const INVALID_SIGNER: u64 = 0x10;
     const INVALID_TARGET: u64 = 0x11;
+
+    // define logic error
+    const NOT_ABLE_TO_DEPOSIT: u64 = 0x12;
+    const NOT_ABLE_TO_WITHDRAW: u64 = 0x14;
+    const NOT_ABLE_TO_UPDATE: u64 = 0x15;
+    const NOT_ABLE_TO_PAUSE: u64 = 0x16;
+    const NOT_ABLE_TO_CLOSE: u64 = 0x17;
+    const NOT_ABLE_TO_RESTART: u64 = 0x18;
+    const NOT_READY_TO_SWAP: u64 = 0x19;
+    const NOT_READY_TO_CLOSE_POSITION: u64 = 0x20;
 
     // define value comparison
     struct ValueComparision has copy, store, drop {
@@ -134,41 +144,6 @@ module hamsterpocket::pocket {
         owner_map: table_with_length::TableWithLength<String, address>,
     }
 
-    // define create pocket params
-    struct CreatePocketParams has drop, copy {
-        id: String,
-        base_token_address: address,
-        target_token_address: address,
-        amm: u64,
-        start_at: u64,
-        frequency: u64,
-        batch_volume: u256,
-        open_position_condition: ValueComparision,
-        stop_loss_condition: TradingStopCondition,
-        take_profit_condition: TradingStopCondition,
-        auto_close_condition: AutoCloseCondition,
-    }
-
-    // define update pocket params
-    struct UpdatePocketParams has drop, copy {
-        id: String,
-        start_at: u64,
-        frequency: u64,
-        batch_volume: u256,
-        open_position_condition: ValueComparision,
-        stop_loss_condition: TradingStopCondition,
-        take_profit_condition: TradingStopCondition,
-        auto_close_condition: AutoCloseCondition,
-    }
-
-    // define update status params
-    struct UpdateStatusParams has drop, copy {
-        id: String,
-        actor: address,
-        status: u64,
-        reason: String
-    }
-
     // define update trading stats params
     struct UpdateTradingStatsParams has drop, copy {
         id: String,
@@ -218,9 +193,68 @@ module hamsterpocket::pocket {
     // create pocket
     public(friend) fun create_pocket(
         signer: &signer,
-        params: CreatePocketParams
+        id: String,
+        base_token_address: address,
+        target_token_address: address,
+        amm: u64,
+        start_at: u64,
+        frequency: u64,
+        batch_volume: u256,
+        open_position_condition_operator: u64,
+        open_position_condition_value_x: u256,
+        open_position_condition_value_y: u256,
+        stop_loss_condition_stopped_with: u64,
+        stop_loss_condition_value: u256,
+        take_profit_condition_stopped_with: u64,
+        take_profit_condition_value: u256,
+        auto_close_condition_closed_with: u64,
+        auto_close_condition_value: u256
     ) acquires PocketStore, ResourceAccountStore {
-        let owner_map = &mut borrow_global_mut<ResourceAccountStore>(@hamsterpocket).owner_map;
+        let pocket = &mut Pocket {
+            id,
+            owner: address_of(signer),
+            base_token_address,
+            target_token_address,
+            amm, // currently we only support PCS as default
+            start_at,
+            frequency, // second
+            batch_volume,
+            open_position_condition: ValueComparision {
+                operator: open_position_condition_operator,
+                value_x: open_position_condition_value_x,
+                value_y: open_position_condition_value_y
+            },
+            stop_loss_condition: TradingStopCondition {
+                stopped_with: stop_loss_condition_stopped_with,
+                value: stop_loss_condition_value
+            },
+            take_profit_condition: TradingStopCondition {
+                stopped_with: take_profit_condition_stopped_with,
+                value: take_profit_condition_value
+            },
+            auto_close_condition: AutoCloseCondition {
+                closed_with: auto_close_condition_closed_with,
+                value: auto_close_condition_value
+            },
+            // statistic fields won't validate at initialization
+            status: STATUS_ACTIVE,
+            total_deposited_base_amount: 0,
+            total_swapped_base_amount: 0,
+            total_received_target_amount: 0,
+            total_closed_position_in_target_amount: 0,
+            total_received_fund_in_base_amount: 0,
+            base_token_balance: 0,
+            target_token_balance: 0,
+            executed_batch_amount: 0,
+            next_scheduled_execution_at: 0
+        };
+
+        // validate pocket first
+        validate_pocket(pocket);
+
+        let owner_map = &mut borrow_global_mut<ResourceAccountStore>(
+            @hamsterpocket
+        ).owner_map;
 
         // if pocket store does not exists, we create one
         if (!exists<PocketStore>(address_of(signer))) {
@@ -240,7 +274,7 @@ module hamsterpocket::pocket {
         };
 
         // now we map signer for better query
-        table_with_length::add(owner_map, params.id, address_of(signer));
+        table_with_length::add(owner_map, pocket.id, address_of(signer));
 
         let store = borrow_global_mut<PocketStore>(address_of(signer));
         let pockets = &mut store.pockets;
@@ -249,60 +283,65 @@ module hamsterpocket::pocket {
         assert!(
             !table_with_length::contains(
                 pockets,
-                params.id
+                pocket.id
             ),
             DUPLICATED_ID
         );
 
-        // now we assign pocket data from params
-        let pocket = &mut create_empty(address_of(signer));
-        pocket.id = params.id;
-        pocket.base_token_address = params.base_token_address;
-        pocket.target_token_address = params.target_token_address;
-        pocket.amm = params.amm;
-        pocket.start_at = params.start_at;
-        pocket.frequency = params.frequency;
-        pocket.batch_volume = params.batch_volume;
-        pocket.open_position_condition = params.open_position_condition;
-        pocket.stop_loss_condition = params.stop_loss_condition;
-        pocket.take_profit_condition = params.take_profit_condition;
-        pocket.auto_close_condition = params.auto_close_condition;
-
-        // compute other state
-        pocket.next_scheduled_execution_at = params.start_at;
-
-        // validate pocket
-        validate_pocket(pocket);
-
         // now we add to store
-        table_with_length::add(pockets, params.id, *pocket);
+        table_with_length::add(pockets, pocket.id, *pocket);
     }
 
-    // create pocket
+    // update pocket
     public(friend) fun update_pocket(
         signer: &signer,
-        params: UpdatePocketParams
+        id: String,
+        start_at: u64,
+        frequency: u64,
+        batch_volume: u256,
+        open_position_condition_operator: u64,
+        open_position_condition_value_x: u256,
+        open_position_condition_value_y: u256,
+        stop_loss_condition_stopped_with: u64,
+        stop_loss_condition_value: u256,
+        take_profit_condition_stopped_with: u64,
+        take_profit_condition_value: u256,
+        auto_close_condition_closed_with: u64,
+        auto_close_condition_value: u256
     ) acquires PocketStore, ResourceAccountStore {
         // now we extract pocket
-        let pocket = &mut get_pocket(params.id);
+        let pocket = &mut get_pocket(id);
 
         // make sure the pocket is able to udpate
-        assert!(is_able_to_update(params.id, signer), error::invalid_state(INVALID_POCKET_STATE));
+        is_able_to_update(signer, pocket.id,true);
 
         // now we assign pocket data from params
-        pocket.frequency = params.frequency;
-        pocket.batch_volume = params.batch_volume;
-        pocket.open_position_condition = params.open_position_condition;
-        pocket.stop_loss_condition = params.stop_loss_condition;
-        pocket.take_profit_condition = params.take_profit_condition;
-        pocket.auto_close_condition = params.auto_close_condition;
+        pocket.frequency = frequency;
+        pocket.batch_volume = batch_volume;
+        pocket.open_position_condition = ValueComparision {
+            operator: open_position_condition_operator,
+            value_x: open_position_condition_value_x,
+            value_y: open_position_condition_value_y
+        };
+        pocket.stop_loss_condition = TradingStopCondition {
+            stopped_with: stop_loss_condition_stopped_with,
+            value: stop_loss_condition_value
+        };
+        pocket.take_profit_condition = TradingStopCondition {
+            stopped_with: take_profit_condition_stopped_with,
+            value: take_profit_condition_value
+        };
+        pocket.auto_close_condition = AutoCloseCondition {
+            closed_with: auto_close_condition_closed_with,
+            value: auto_close_condition_value
+        };
 
         // compute other state
         if (pocket.next_scheduled_execution_at == pocket.start_at) {
-            pocket.start_at = params.start_at;
-            pocket.next_scheduled_execution_at = params.start_at;
+            pocket.start_at = start_at;
+            pocket.next_scheduled_execution_at = start_at;
         } else {
-            pocket.start_at = params.start_at;
+            pocket.start_at = start_at;
         };
 
         // validate pocket
@@ -368,7 +407,7 @@ module hamsterpocket::pocket {
         let pocket = &mut get_pocket(pocket_id);
 
         // make sure the pocket is able to close
-        assert!(is_able_to_close(pocket_id, signer), error::invalid_state(INVALID_POCKET_STATE));
+        is_able_to_close(signer, pocket_id, true);
 
         pocket.status = STATUS_CLOSED;
     }
@@ -379,7 +418,7 @@ module hamsterpocket::pocket {
         let pocket = &mut get_pocket(pocket_id);
 
         // make sure the pocket is able to restart
-        assert!(is_able_to_restart(pocket_id, signer), error::invalid_state(INVALID_POCKET_STATE));
+        is_able_to_restart(signer, pocket_id, true);
 
         pocket.status = STATUS_ACTIVE;
     }
@@ -390,101 +429,9 @@ module hamsterpocket::pocket {
         let pocket = &mut get_pocket(pocket_id);
 
         // make sure the pocket is able to pause
-        assert!(is_able_to_pause(pocket_id, signer), error::invalid_state(INVALID_POCKET_STATE));
+        is_able_to_pause(signer, pocket_id, true);
 
         pocket.status = STATUS_PAUSED;
-    }
-
-    // check whether the pocket is able to deposit
-    public(friend) fun is_able_to_deposit(
-        pocket_id: String,
-        signer: &signer
-    ): bool acquires PocketStore, ResourceAccountStore {
-        let pocket = &get_pocket(pocket_id);
-
-        return is_owner_of(pocket, signer) &&
-            pocket.status != STATUS_CLOSED &&
-            pocket.status != STATUS_WITHDRAWN
-    }
-
-    // check whether the pocket is able to update
-    public(friend) fun is_able_to_update(
-        pocket_id: String,
-        signer: &signer
-    ): bool acquires PocketStore, ResourceAccountStore {
-        let pocket = &get_pocket(pocket_id);
-
-        return is_owner_of(pocket, signer) &&
-            pocket.status != STATUS_CLOSED &&
-            pocket.status != STATUS_WITHDRAWN
-    }
-
-    // check whether the pocket is able to update
-    public(friend) fun is_able_to_close(
-        pocket_id: String,
-        signer: &signer
-    ): bool acquires PocketStore, ResourceAccountStore {
-        let pocket = &get_pocket(pocket_id);
-
-        return is_owner_of(pocket, signer) &&
-            pocket.status != STATUS_CLOSED &&
-            pocket.status != STATUS_WITHDRAWN
-    }
-
-    // check whether the pocket is able to update
-    public(friend) fun is_able_to_pause(
-        pocket_id: String,
-        signer: &signer
-    ): bool acquires PocketStore, ResourceAccountStore {
-        let pocket = &get_pocket(pocket_id);
-
-        return is_owner_of(pocket, signer) &&
-            pocket.status == STATUS_ACTIVE
-    }
-
-    // check whether the pocket is able to update
-    public(friend) fun is_able_to_restart(
-        pocket_id: String,
-        signer: &signer
-    ): bool acquires PocketStore, ResourceAccountStore {
-        let pocket = &get_pocket(pocket_id);
-
-        return is_owner_of(pocket, signer) &&
-            pocket.status == STATUS_PAUSED
-    }
-
-    // check whether the pocket is able to update
-    public(friend) fun is_able_to_withdraw(
-        pocket_id: String,
-        signer: &signer
-    ): bool acquires PocketStore, ResourceAccountStore {
-        let pocket = &get_pocket(pocket_id);
-
-        return is_owner_of(pocket, signer) &&
-            pocket.status == STATUS_CLOSED
-    }
-
-    // check whether the pocket is able to update
-    public(friend) fun is_ready_to_swap(
-        pocket_id: String
-    ): bool acquires PocketStore, ResourceAccountStore {
-        let pocket = &get_pocket(pocket_id);
-
-        return pocket.status == STATUS_ACTIVE &&
-            pocket.base_token_balance >= pocket.batch_volume &&
-            pocket.start_at <= timestamp::now_seconds() &&
-            pocket.next_scheduled_execution_at <= timestamp::now_seconds()
-    }
-
-    // check whether the pocket is able to update
-    public(friend) fun is_ready_to_close_position(
-        pocket_id: String
-    ): bool acquires PocketStore, ResourceAccountStore {
-        let pocket = &get_pocket(pocket_id);
-
-        return pocket.status != STATUS_WITHDRAWN &&
-            pocket.target_token_balance > 0 &&
-            pocket.start_at <= timestamp::now_seconds()
     }
 
     // get pocket
@@ -518,6 +465,153 @@ module hamsterpocket::pocket {
         return *pocket
     }
 
+    // check whether the pocket is able to deposit
+    public(friend) fun is_able_to_deposit(
+        signer: &signer,
+        pocket_id: String,
+        raise_error: bool
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
+        let result = is_owner_of(pocket, signer) &&
+            pocket.status != STATUS_CLOSED &&
+            pocket.status != STATUS_WITHDRAWN;
+
+        if (raise_error) {
+            assert!(result, error::invalid_state(NOT_ABLE_TO_DEPOSIT));
+        };
+
+        return result
+    }
+
+    // check whether the pocket is able to update
+    public(friend) fun is_able_to_update(
+        signer: &signer,
+        pocket_id: String,
+        raise_error: bool
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
+        let result = is_owner_of(pocket, signer) &&
+            pocket.status != STATUS_CLOSED &&
+            pocket.status != STATUS_WITHDRAWN;
+
+        if (raise_error) {
+            assert!(result, error::invalid_state(NOT_ABLE_TO_UPDATE));
+        };
+
+        return result
+    }
+
+    // check whether the pocket is able to update
+    public(friend) fun is_able_to_close(
+        signer: &signer,
+        pocket_id: String,
+        raise_error: bool
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
+        let result = is_owner_of(pocket, signer) &&
+            pocket.status != STATUS_CLOSED &&
+            pocket.status != STATUS_WITHDRAWN;
+
+        if (raise_error) {
+            assert!(result, error::invalid_state(NOT_ABLE_TO_CLOSE));
+        };
+
+        return result
+    }
+
+    // check whether the pocket is able to update
+    public(friend) fun is_able_to_pause(
+        signer: &signer,
+        pocket_id: String,
+        raise_error: bool
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
+        let result = is_owner_of(pocket, signer) &&
+            pocket.status == STATUS_ACTIVE;
+
+        if (raise_error) {
+            assert!(result, error::invalid_state(NOT_ABLE_TO_PAUSE));
+        };
+
+        return result
+    }
+
+    // check whether the pocket is able to update
+    public(friend) fun is_able_to_restart(
+        signer: &signer,
+        pocket_id: String,
+        raise_error: bool
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
+        let result = is_owner_of(pocket, signer) &&
+            pocket.status == STATUS_PAUSED;
+
+        if (raise_error) {
+            assert!(result, error::invalid_state(NOT_ABLE_TO_RESTART));
+        };
+
+        return result
+    }
+
+    // check whether the pocket is able to update
+    public(friend) fun is_able_to_withdraw(
+        signer: &signer,
+        pocket_id: String,
+        raise_error: bool
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
+        let result = is_owner_of(pocket, signer) &&
+            pocket.status == STATUS_CLOSED;
+
+        if (raise_error) {
+            assert!(result, error::invalid_state(NOT_ABLE_TO_WITHDRAW));
+        };
+
+        return result
+    }
+
+    // check whether the pocket is able to update
+    public(friend) fun is_ready_to_swap(
+        pocket_id: String,
+        raise_error: bool
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
+        let result = pocket.status == STATUS_ACTIVE &&
+            pocket.base_token_balance >= pocket.batch_volume &&
+            pocket.start_at <= timestamp::now_seconds() &&
+            pocket.next_scheduled_execution_at <= timestamp::now_seconds();
+
+        if (raise_error) {
+            assert!(result, error::invalid_state(NOT_READY_TO_SWAP));
+        };
+
+        return result
+    }
+
+    // check whether the pocket is able to update
+    public(friend) fun is_ready_to_close_position(
+        pocket_id: String,
+        raise_error: bool
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+
+        let result = pocket.status != STATUS_WITHDRAWN &&
+            pocket.target_token_balance > 0 &&
+            pocket.start_at <= timestamp::now_seconds();
+
+        if (raise_error) {
+            assert!(result, error::invalid_state(NOT_READY_TO_CLOSE_POSITION));
+        };
+
+        return result
+    }
 
     // get pocket resource signer
     fun get_pocket_signer_resource(pocket_id: String): (signer, address) acquires PocketStore, ResourceAccountStore {
@@ -544,35 +638,6 @@ module hamsterpocket::pocket {
 
         // return address
         return (resource_signer, *owner)
-    }
-
-    // init an empty pocket
-    fun create_empty(owner: address): Pocket {
-        Pocket {
-            id: string::utf8(b""),
-            status: STATUS_ACTIVE,
-            owner,
-            base_token_address: @0x0,
-            target_token_address: @0x0,
-            amm: AMM_PCS, // currently we only support PCS as default
-            start_at: 0,
-            frequency: 0, // second
-            batch_volume: 0,
-            open_position_condition: ValueComparision { operator: UNSET, value_x: 0, value_y: 0 },
-            stop_loss_condition: TradingStopCondition { stopped_with: UNSET, value: 0 },
-            take_profit_condition: TradingStopCondition { stopped_with: UNSET, value: 0 },
-            auto_close_condition: AutoCloseCondition { closed_with: UNSET, value: 0 },
-            // statistic fields won't validate at initialization
-            total_deposited_base_amount: 0,
-            total_swapped_base_amount: 0,
-            total_received_target_amount: 0,
-            total_closed_position_in_target_amount: 0,
-            total_received_fund_in_base_amount: 0,
-            base_token_balance: 0,
-            target_token_balance: 0,
-            executed_batch_amount: 0,
-            next_scheduled_execution_at: 0
-        }
     }
 
     // check whether the pocket is valid

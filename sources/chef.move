@@ -4,8 +4,8 @@ module hamsterpocket::chef {
     use aptos_framework::account;
     use aptos_framework::code;
 
-    use std::option::{Self, Option};
     use std::error;
+    use std::string;
 
     use hamsterpocket::pocket;
     use hamsterpocket::platform;
@@ -46,11 +46,109 @@ module hamsterpocket::chef {
         code::publish_package_txn(&resource_signer, metadata_serialized, code);
     }
 
-    // create first entry
+    // update pocket
     public entry fun create_pocket(
         signer: &signer,
-        params: Option<pocket::CreatePocketParams>
+        id: vector<u8>,
+        base_token_address: address,
+        target_token_address: address,
+        amm: u64,
+        start_at: u64,
+        frequency: u64,
+        batch_volume: u256,
+        open_position_condition_operator: u64,
+        open_position_condition_value_x: u256,
+        open_position_condition_value_y: u256,
+        stop_loss_condition_stopped_with: u64,
+        stop_loss_condition_value: u256,
+        take_profit_condition_stopped_with: u64,
+        take_profit_condition_value: u256,
+        auto_close_condition_closed_with: u64,
+        auto_close_condition_value: u256
     ) {
-        pocket::create_pocket(signer, *option::borrow(&params));
+        pocket:: create_pocket(
+            signer,
+            string::utf8(id),
+            base_token_address,
+            target_token_address,
+            amm,
+            start_at,
+            frequency,
+            batch_volume,
+            open_position_condition_operator,
+            open_position_condition_value_x,
+            open_position_condition_value_y,
+            stop_loss_condition_stopped_with,
+            stop_loss_condition_value,
+            take_profit_condition_stopped_with,
+            take_profit_condition_value,
+            auto_close_condition_closed_with,
+            auto_close_condition_value
+        )
+    }
+
+    // update pocket
+    public entry fun update_pocket(
+        signer: &signer,
+        id: vector<u8>,
+        start_at: u64,
+        frequency: u64,
+        batch_volume: u256,
+        open_position_condition_operator: u64,
+        open_position_condition_value_x: u256,
+        open_position_condition_value_y: u256,
+        stop_loss_condition_stopped_with: u64,
+        stop_loss_condition_value: u256,
+        take_profit_condition_stopped_with: u64,
+        take_profit_condition_value: u256,
+        auto_close_condition_closed_with: u64,
+        auto_close_condition_value: u256
+    ) {
+        pocket::update_pocket(
+            signer,
+            string::utf8(id),
+            start_at,
+            frequency,
+            batch_volume,
+            open_position_condition_operator,
+            open_position_condition_value_x,
+            open_position_condition_value_y,
+            stop_loss_condition_stopped_with,
+            stop_loss_condition_value,
+            take_profit_condition_stopped_with,
+            take_profit_condition_value,
+            auto_close_condition_closed_with,
+            auto_close_condition_value
+        )
+    }
+
+    // get pocket data
+    #[view]
+    public fun get_pocket(id: vector<u8>): pocket::Pocket {
+        return pocket::get_pocket(string::utf8(id))
+    }
+
+    // pause pocket
+    public(friend) entry fun pause_pocket(signer: &signer, id: vector<u8>) {
+        pocket::mark_as_paused(
+            string::utf8(id),
+            signer
+        );
+    }
+
+    // restart pocket
+    public(friend) entry fun restart_pocket(signer: &signer, id: vector<u8>) {
+        pocket::mark_as_active(
+            string::utf8(id),
+            signer
+        );
+    }
+
+    // restart pocket
+    public(friend) entry fun close_pocket(signer: &signer, id: vector<u8>) {
+        pocket::mark_as_closed(
+            string::utf8(id),
+            signer
+        );
     }
 }

@@ -1,1 +1,3 @@
-module hamsterpocket::vault {}
+module hamsterpocket::vault {
+    public(friend) fun swap(){}
+}
