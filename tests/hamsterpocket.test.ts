@@ -1,6 +1,6 @@
 import { AptosBootingManager } from "./aptos-node/aptos.boot";
 
-const aptosLocalNodeProcess = new AptosBootingManager();
+const aptosLocalNodeProcess = AptosBootingManager.getInstance();
 
 describe("hamsterpocket", function () {
   jest.setTimeout(60000);

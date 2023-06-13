@@ -12,7 +12,7 @@ import {
 } from "../client/entities/pocket.entity";
 import { CreatePocketParams } from "../client/params.type";
 
-describe("[manage_pocket]", function () {
+describe("manage_pocket", function () {
   let signer: TransactionSigner;
   let txBuilder: TransactionBuilder;
 

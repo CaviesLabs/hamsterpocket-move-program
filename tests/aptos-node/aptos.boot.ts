@@ -4,11 +4,10 @@ import { UtilsProvider } from "./utils.provider";
 
 export class AptosBootingManager {
   private currentProcess: ChildProcessWithoutNullStreams | undefined;
+  public static currentInstance: AptosBootingManager | undefined;
 
   public static PRIVATE_KEY =
     "0xeaa4eea8ac8048dfd7e3da319ad0834f9a10b171d2186318255f451b5baf6d90";
-  public static PUBLIC_KEY =
-    "0xfd03e78d1351c7efb5fc82a152ed32f3fc94bf045e25be98b1433da2230c594e";
   public static MAIN_ACCOUNT_ADDRESS =
     "1e5320d3a1a12f28c22a52b62a3815cbf0efc49020089d350454f1d3fd53fd90";
   public static RESOURCE_ACCOUNT_ADDRESS =
@@ -17,6 +16,18 @@ export class AptosBootingManager {
   public static APTOS_NODE_URL = "http://127.0.0.1:8080/";
 
   constructor(private readonly handler = require("node:child_process")) {}
+
+  /**
+   * @notice Singleton to get current instance
+   */
+  public static getInstance(): AptosBootingManager {
+    if (this.currentInstance) {
+      return this.currentInstance;
+    }
+
+    this.currentInstance = new AptosBootingManager();
+    return this.currentInstance;
+  }
 
   /**
    * @notice Start aptos node
@@ -112,6 +123,26 @@ export class AptosBootingManager {
         `--url ${AptosBootingManager.APTOS_NODE_URL}`,
       ].join(" "),
       { stdio: "inherit" }
+    );
+  }
+
+  /**
+   * @notice Funding faucet to an account
+   * @param addressHex
+   */
+  public async fundingWithFaucet(addressHex: string): Promise<void> {
+    return Promise.resolve(
+      this.handler.execSync(
+        [
+          "aptos",
+          "account",
+          "fund-with-faucet",
+          `--account ${addressHex}`,
+          `--faucet-url ${AptosBootingManager.APTOS_FAUCET_URL}`,
+          `--url ${AptosBootingManager.APTOS_NODE_URL}`,
+        ].join(" "),
+        { stdio: "inherit" }
+      )
     );
   }
 }
