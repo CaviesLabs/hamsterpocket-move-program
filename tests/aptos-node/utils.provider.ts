@@ -70,7 +70,7 @@ export class UtilsProvider {
        * Assign a random value to make sure it's unique
        */
       const randomizedValue = this.randomize();
-      let result: Result | string = randomizedValue;
+      let result: Result | string | null = randomizedValue;
 
       /**
        * Make a setTimeout to resolve the value

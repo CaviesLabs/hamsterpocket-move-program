@@ -28,6 +28,7 @@ export enum AutoCloseConditionClosedWith {
   CLOSED_WITH_SPENT_BASE_AMOUNT = 0x3,
   CLOSED_WITH_RECEIVED_TARGET_AMOUNT = 0x4,
 }
+
 export interface CreatePocketParams {
   id: string;
   baseTokenAddress: string;
@@ -46,6 +47,7 @@ export interface CreatePocketParams {
   autoCloseConditionClosedWith: AutoCloseConditionClosedWith;
   autoCloseConditionValue: bigint;
 }
+
 export interface UpdatePocketParams {
   id: string;
   startAt: bigint;
@@ -61,6 +63,7 @@ export interface UpdatePocketParams {
   autoCloseConditionClosedWith: AutoCloseConditionClosedWith;
   autoCloseConditionValue: bigint;
 }
+
 export interface GetPocketParams {
   id: string;
 }

@@ -632,12 +632,10 @@ module hamsterpocket::pocket {
     // get pocket resource signer
     fun get_pocket_signer_resource(pocket_id: String): (signer, address) acquires PocketStore, ResourceAccountStore {
         let owner_map = &borrow_global<ResourceAccountStore>(HAMSTERPOCKET).owner_map;
-        debug::print(&table_with_length::length(owner_map));
-        debug::print(&pocket_id);
 
         // make sure the system must be knowing the signer of the pocket
         assert!(
-            table_with_length::contains(
+            table_with_length::contains<String, address>(
                 owner_map,
                 pocket_id
             ),
@@ -648,7 +646,7 @@ module hamsterpocket::pocket {
         let owner = table_with_length::borrow(owner_map, pocket_id);
 
         let signer_cap = &borrow_global<PocketStore>(
-            *(copy owner)
+            *(owner)
         ).signer_cap;
 
         // now we convert to signer

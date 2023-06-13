@@ -8,6 +8,7 @@ import {
   OpenPositionOperator,
   StopConditionStoppedWith,
 } from "../client/params.type";
+import { transformPocketEntity } from "../client/entities/pocket.entity";
 
 describe("[manage_pocket]", function () {
   let signer: TransactionSigner;
@@ -19,18 +20,17 @@ describe("[manage_pocket]", function () {
       AptosBootingManager.APTOS_NODE_URL
     );
 
-    txBuilder = new TransactionBuilder();
+    txBuilder = new TransactionBuilder(signer);
 
     /**
      * @dev Whitelist target first
      */
-    await signer.signAndSendTransaction(
-      txBuilder.buildSetInteractiveTargetPayload(
+    await txBuilder
+      .buildSetInteractiveTargetTransaction(
         "0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa",
         true
-      ),
-      true
-    );
+      )
+      .execute();
   });
 
   it("[manage_pocket] should: create pocket successfully", async () => {
@@ -55,14 +55,14 @@ describe("[manage_pocket]", function () {
       autoCloseConditionClosedWith: AutoCloseConditionClosedWith.UNSET,
     };
 
-    // create
-    await signer.signAndSendTransaction(
-      txBuilder.buildCreatePocketPayload(pocketData),
-      true
-    );
+    // create pocket
+    await txBuilder.buildCreatePocketTransaction(pocketData).execute();
 
-    console.log(
-      await signer.view(txBuilder.buildGetPocketPayload({ id: pocketData.id }))
-    );
+    const [pocketResponse] = await txBuilder
+      .buildGetPocket({ id: pocketData.id })
+      .execute();
+    const transformedPocket = transformPocketEntity(pocketResponse);
+
+    expect(transformedPocket.id).toEqual(pocketData.id);
   });
 });

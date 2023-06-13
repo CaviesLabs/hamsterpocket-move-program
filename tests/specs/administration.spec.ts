@@ -12,14 +12,13 @@ describe("administration", function () {
       AptosBootingManager.APTOS_NODE_URL
     );
 
-    txBuilder = new TransactionBuilder();
+    txBuilder = new TransactionBuilder(signer);
   });
 
   it("[administration] should: initial admin has been already added", async () => {
-    const [result] = await signer.view(
-      txBuilder.buildCheckForAllowedAdmin(signer.getAddress().hex())
-    );
-
+    const [result] = await txBuilder
+      .buildCheckForAllowedAdmin(signer.getAddress().hex())
+      .execute();
     expect(result).toEqual(true);
   });
 });
