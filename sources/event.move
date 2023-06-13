@@ -5,8 +5,8 @@ module hamsterpocket::event {
     struct UpdateTradingStatsEvent has drop, copy {
         id: String,
         actor: address,
-        swapped_base_token_amount: u256,
-        received_target_token_amount: u256,
+        swapped_base_token_amount: u64,
+        received_target_token_amount: u64,
         reason: String
     }
 
@@ -14,8 +14,8 @@ module hamsterpocket::event {
     struct UpdateClosePositionEvent has drop, copy {
         id: String,
         actor: address,
-        swapped_target_token_amount: u256,
-        received_base_token_amount: u256,
+        swapped_target_token_amount: u64,
+        received_base_token_amount: u64,
         reason: String
     }
 
@@ -23,8 +23,8 @@ module hamsterpocket::event {
     struct UpdateDepositStatsEvent has drop, copy {
         id: String,
         actor: address,
-        amount: u256,
-        token_address: u256,
+        amount: u64,
+        token_address: u64,
         reason: String
     }
 
@@ -32,8 +32,8 @@ module hamsterpocket::event {
     struct UpdateWithdrawalStatsEvent has drop, copy {
         id: String,
         actor: address,
-        amount: u256,
-        token_address: u256,
+        amount: u64,
+        token_address: u64,
         reason: String
     }
 }

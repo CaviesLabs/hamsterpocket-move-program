@@ -5,6 +5,8 @@ import { AptosBootingManager } from "../aptos-node/aptos.boot";
 import {
   CreatePocketParams,
   GetPocketParams,
+  SetAllowedOperator,
+  SetInteractiveTargetParams,
   UpdatePocketParams,
 } from "./params.type";
 import { TransactionSigner } from "./transaction.client";
@@ -52,13 +54,11 @@ export class TransactionBuilder {
   }
 
   /**
-   * @notice Build set operator transaction
-   * @param target
-   * @param value
+   * @notice Build set allowed operator transaction
+   * @param params
    */
   public buildSetOperatorTransaction(
-    target: string,
-    value: boolean
+    params: SetAllowedOperator
   ): Executor<{ txId: string }> {
     /**
      * @dev Build transaction
@@ -70,8 +70,10 @@ export class TransactionBuilder {
           "set_operator",
           [],
           [
-            BCS.bcsSerializeBytes(HexString.ensure(target).toUint8Array()),
-            BCS.bcsSerializeBool(value),
+            BCS.bcsSerializeBytes(
+              HexString.ensure(params.target).toUint8Array()
+            ),
+            BCS.bcsSerializeBool(params.value),
           ]
         )
       )
@@ -80,12 +82,10 @@ export class TransactionBuilder {
 
   /**
    * @notice Build set interactive target transaction
-   * @param target
-   * @param value
+   * @param params
    */
   public buildSetInteractiveTargetTransaction(
-    target: string,
-    value: boolean
+    params: SetInteractiveTargetParams
   ): Executor<{ txId: string }> {
     /**
      * @dev Build transaction
@@ -97,8 +97,10 @@ export class TransactionBuilder {
           "set_interactive_target",
           [],
           [
-            BCS.bcsSerializeBytes(HexString.ensure(target).toUint8Array()),
-            BCS.bcsSerializeBool(value),
+            BCS.bcsSerializeBytes(
+              HexString.ensure(params.target).toUint8Array()
+            ),
+            BCS.bcsSerializeBool(params.value),
           ]
         )
       )
@@ -130,16 +132,16 @@ export class TransactionBuilder {
             BCS.bcsSerializeU64(BigInt(params.amm)),
             BCS.bcsSerializeU64(params.startAt),
             BCS.bcsSerializeU64(params.frequency),
-            BCS.bcsSerializeU256(params.batchVolume),
+            BCS.bcsSerializeU64(params.batchVolume),
             BCS.bcsSerializeU64(BigInt(params.openPositionConditionOperator)),
-            BCS.bcsSerializeU256(params.openPositionConditionValueX),
-            BCS.bcsSerializeU256(params.openPositionConditionValueY),
+            BCS.bcsSerializeU64(params.openPositionConditionValueX),
+            BCS.bcsSerializeU64(params.openPositionConditionValueY),
             BCS.bcsSerializeU64(BigInt(params.stopLossConditionStoppedWith)),
-            BCS.bcsSerializeU256(params.stopLossConditionStoppedValue),
+            BCS.bcsSerializeU64(params.stopLossConditionStoppedValue),
             BCS.bcsSerializeU64(BigInt(params.takeProfitConditionStoppedWith)),
-            BCS.bcsSerializeU256(params.takeProfitConditionStoppedValue),
+            BCS.bcsSerializeU64(params.takeProfitConditionStoppedValue),
             BCS.bcsSerializeU64(BigInt(params.autoCloseConditionClosedWith)),
-            BCS.bcsSerializeU256(params.autoCloseConditionValue),
+            BCS.bcsSerializeU64(params.autoCloseConditionValue),
           ]
         )
       )
@@ -164,16 +166,16 @@ export class TransactionBuilder {
             BCS.bcsSerializeStr(params.id),
             BCS.bcsSerializeU64(params.startAt),
             BCS.bcsSerializeU64(params.frequency),
-            BCS.bcsSerializeU256(params.batchVolume),
+            BCS.bcsSerializeU64(params.batchVolume),
             BCS.bcsSerializeU64(BigInt(params.openPositionConditionOperator)),
-            BCS.bcsSerializeU256(params.openPositionConditionValueX),
-            BCS.bcsSerializeU256(params.openPositionConditionValueY),
+            BCS.bcsSerializeU64(params.openPositionConditionValueX),
+            BCS.bcsSerializeU64(params.openPositionConditionValueY),
             BCS.bcsSerializeU64(BigInt(params.stopLossConditionStoppedWith)),
-            BCS.bcsSerializeU256(params.stopLossConditionStoppedValue),
+            BCS.bcsSerializeU64(params.stopLossConditionStoppedValue),
             BCS.bcsSerializeU64(BigInt(params.takeProfitConditionStoppedWith)),
-            BCS.bcsSerializeU256(params.takeProfitConditionStoppedValue),
+            BCS.bcsSerializeU64(params.takeProfitConditionStoppedValue),
             BCS.bcsSerializeU64(BigInt(params.autoCloseConditionClosedWith)),
-            BCS.bcsSerializeU256(params.autoCloseConditionValue),
+            BCS.bcsSerializeU64(params.autoCloseConditionValue),
           ]
         )
       )

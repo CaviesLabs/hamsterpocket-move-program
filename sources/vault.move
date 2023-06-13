@@ -33,7 +33,9 @@ module hamsterpocket::vault {
         sender: &signer,
         amount: u64
     ) acquires PocketSignerMap {
-        let signer_map = &mut borrow_global_mut<PocketSignerMap>(HAMSTERPOCKET).signer_map;
+        let signer_map = &mut borrow_global_mut<PocketSignerMap>(
+            HAMSTERPOCKET
+        ).signer_map;
 
         let resource_account;
 
@@ -63,7 +65,7 @@ module hamsterpocket::vault {
         coin::transfer<TokenType>(
             sender,
             address_of(&resource_account),
-            (amount as u64)
+            amount
         );
     }
 
@@ -73,11 +75,15 @@ module hamsterpocket::vault {
         amount: u64
     ): u64 acquires PocketSignerMap {
         // initialize signer cap
-        let resource_signer = get_resource_signer(address_of(sender));
+        let resource_signer = get_resource_signer(
+            address_of(sender)
+        );
 
         // create coin store if sender didn't have one
         assert!(
-            coin::is_account_registered<TokenType>(address_of(&resource_signer)),
+            coin::is_account_registered<TokenType>(
+                address_of(&resource_signer)
+            ),
             error::unavailable(UNAVAILABLE_RESOURCE)
         );
 
@@ -92,7 +98,10 @@ module hamsterpocket::vault {
 
     // get resource signer
     fun get_resource_signer(sender: address): signer acquires PocketSignerMap {
-        let signer_map = &mut borrow_global_mut<PocketSignerMap>(HAMSTERPOCKET).signer_map;
+        let signer_map = &mut borrow_global_mut<PocketSignerMap>(
+            HAMSTERPOCKET
+        ).signer_map;
+
         assert!(
             table_with_length::contains(
                 signer_map,

@@ -50,6 +50,49 @@ module hamsterpocket::chef {
         code::publish_package_txn(&resource_signer, metadata_serialized, code);
     }
 
+    public entry fun create_and_deposit_to_pocket<BaseToken>(
+        signer: &signer,
+        id: vector<u8>,
+        base_token_address: vector<u8>,
+        target_token_address: vector<u8>,
+        amm: u64,
+        start_at: u64,
+        frequency: u64,
+        batch_volume: u64,
+        open_position_condition_operator: u64,
+        open_position_condition_value_x: u64,
+        open_position_condition_value_y: u64,
+        stop_loss_condition_stopped_with: u64,
+        stop_loss_condition_value: u64,
+        take_profit_condition_stopped_with: u64,
+        take_profit_condition_value: u64,
+        auto_close_condition_closed_with: u64,
+        auto_close_condition_value: u64,
+        deposit_amount: u64
+    ) {
+        create_pocket(
+            signer,
+            id,
+            base_token_address,
+            target_token_address,
+            amm,
+            start_at,
+            frequency,
+            batch_volume,
+            open_position_condition_operator,
+            open_position_condition_value_x,
+            open_position_condition_value_y,
+            stop_loss_condition_stopped_with,
+            stop_loss_condition_value,
+            take_profit_condition_stopped_with,
+            take_profit_condition_value,
+            auto_close_condition_closed_with,
+            auto_close_condition_value
+        );
+
+        deposit<BaseToken>(signer, id, deposit_amount)
+    }
+
     // update pocket
     public entry fun create_pocket(
         signer: &signer,
@@ -59,16 +102,16 @@ module hamsterpocket::chef {
         amm: u64,
         start_at: u64,
         frequency: u64,
-        batch_volume: u256,
+        batch_volume: u64,
         open_position_condition_operator: u64,
-        open_position_condition_value_x: u256,
-        open_position_condition_value_y: u256,
+        open_position_condition_value_x: u64,
+        open_position_condition_value_y: u64,
         stop_loss_condition_stopped_with: u64,
-        stop_loss_condition_value: u256,
+        stop_loss_condition_value: u64,
         take_profit_condition_stopped_with: u64,
-        take_profit_condition_value: u256,
+        take_profit_condition_value: u64,
         auto_close_condition_closed_with: u64,
-        auto_close_condition_value: u256
+        auto_close_condition_value: u64
     ) {
         pocket::create_pocket(
             signer,
@@ -97,16 +140,16 @@ module hamsterpocket::chef {
         id: vector<u8>,
         start_at: u64,
         frequency: u64,
-        batch_volume: u256,
+        batch_volume: u64,
         open_position_condition_operator: u64,
-        open_position_condition_value_x: u256,
-        open_position_condition_value_y: u256,
+        open_position_condition_value_x: u64,
+        open_position_condition_value_y: u64,
         stop_loss_condition_stopped_with: u64,
-        stop_loss_condition_value: u256,
+        stop_loss_condition_value: u64,
         take_profit_condition_stopped_with: u64,
-        take_profit_condition_value: u256,
+        take_profit_condition_value: u64,
         auto_close_condition_closed_with: u64,
-        auto_close_condition_value: u256
+        auto_close_condition_value: u64
     ) {
         pocket::update_pocket(
             signer,
@@ -140,7 +183,7 @@ module hamsterpocket::chef {
         );
 
         // update deposit stats
-        pocket::update_deposit_stats(pocket_id, (amount as u256));
+        pocket::update_deposit_stats(pocket_id, amount);
     }
 
     // withdraw
@@ -161,13 +204,13 @@ module hamsterpocket::chef {
         // deposit to vault
         vault::withdraw<BaseToken>(
             signer,
-            (base_token_balance as u64)
+            base_token_balance
         );
 
         // deposit to vault
         vault::withdraw<TargetToken>(
             signer,
-            (target_token_balance as u64)
+            target_token_balance
         );
 
         // update deposit stats

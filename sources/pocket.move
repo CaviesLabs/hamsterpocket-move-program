@@ -64,32 +64,32 @@ module hamsterpocket::pocket {
     const INVALID_TARGET: u64 = 0x11;
 
     // define logic error
-    const NOT_ABLE_TO_DEPOSIT: u64 = 0x12;
-    const NOT_ABLE_TO_WITHDRAW: u64 = 0x14;
-    const NOT_ABLE_TO_UPDATE: u64 = 0x15;
-    const NOT_ABLE_TO_PAUSE: u64 = 0x16;
-    const NOT_ABLE_TO_CLOSE: u64 = 0x17;
-    const NOT_ABLE_TO_RESTART: u64 = 0x18;
-    const NOT_READY_TO_SWAP: u64 = 0x19;
-    const NOT_READY_TO_CLOSE_POSITION: u64 = 0x20;
+    const NOT_ABLE_TO_DEPOSIT: u64 = 0x21;
+    const NOT_ABLE_TO_WITHDRAW: u64 = 0x22;
+    const NOT_ABLE_TO_UPDATE: u64 = 0x23;
+    const NOT_ABLE_TO_PAUSE: u64 = 0x24;
+    const NOT_ABLE_TO_CLOSE: u64 = 0x25;
+    const NOT_ABLE_TO_RESTART: u64 = 0x26;
+    const NOT_READY_TO_SWAP: u64 = 0x27;
+    const NOT_READY_TO_CLOSE_POSITION: u64 = 0x28;
 
     // define value comparison
     struct ValueComparision has copy, store, drop {
         operator: u64,
-        value_x: u256,
-        value_y: u256,
+        value_x: u64,
+        value_y: u64,
     }
 
     // define trading stop condition struct
     struct TradingStopCondition has copy, store, drop {
         stopped_with: u64,
-        value: u256,
+        value: u64,
     }
 
     // define auto close condition struct
     struct AutoCloseCondition has copy, store, drop {
         closed_with: u64,
-        value: u256
+        value: u64
     }
 
     // define pocket struct
@@ -110,24 +110,24 @@ module hamsterpocket::pocket {
         frequency: u64,
 
         // trading conditional fields
-        batch_volume: u256,
+        batch_volume: u64,
         open_position_condition: ValueComparision,
         stop_loss_condition: TradingStopCondition,
         take_profit_condition: TradingStopCondition,
         auto_close_condition: AutoCloseCondition,
 
         // statistic fields are not inserted during pocket creation, but pocket operation
-        total_deposited_base_amount: u256,
-        total_swapped_base_amount: u256,
-        total_received_target_amount: u256,
+        total_deposited_base_amount: u64,
+        total_swapped_base_amount: u64,
+        total_received_target_amount: u64,
 
-        total_closed_position_in_target_amount: u256,
-        total_received_fund_in_base_amount: u256,
+        total_closed_position_in_target_amount: u64,
+        total_received_fund_in_base_amount: u64,
 
-        base_token_balance: u256,
-        target_token_balance: u256,
+        base_token_balance: u64,
+        target_token_balance: u64,
 
-        executed_batch_amount: u256,
+        executed_batch_amount: u64,
         next_scheduled_execution_at: u64
     }
 
@@ -145,8 +145,8 @@ module hamsterpocket::pocket {
     struct UpdateTradingStatsParams has drop, copy {
         id: String,
         actor: address,
-        swapped_base_token_amount: u256,
-        received_target_token_amount: u256,
+        swapped_base_token_amount: u64,
+        received_target_token_amount: u64,
         reason: String
     }
 
@@ -154,8 +154,8 @@ module hamsterpocket::pocket {
     struct UpdateClosePositionParams has drop, copy {
         id: String,
         actor: address,
-        swapped_target_token_amount: u256,
-        received_base_token_amount: u256,
+        swapped_target_token_amount: u64,
+        received_base_token_amount: u64,
         reason: String
     }
 
@@ -163,8 +163,8 @@ module hamsterpocket::pocket {
     struct UpdateDepositStatsParams has drop, copy {
         id: String,
         actor: address,
-        amount: u256,
-        token_address: u256,
+        amount: u64,
+        token_address: u64,
         reason: String
     }
 
@@ -172,8 +172,8 @@ module hamsterpocket::pocket {
     struct UpdateWithdrawalStatsParams has drop, copy {
         id: String,
         actor: address,
-        amount: u256,
-        token_address: u256,
+        amount: u64,
+        token_address: u64,
         reason: String
     }
 
@@ -198,16 +198,16 @@ module hamsterpocket::pocket {
         amm: u64,
         start_at: u64,
         frequency: u64,
-        batch_volume: u256,
+        batch_volume: u64,
         open_position_condition_operator: u64,
-        open_position_condition_value_x: u256,
-        open_position_condition_value_y: u256,
+        open_position_condition_value_x: u64,
+        open_position_condition_value_y: u64,
         stop_loss_condition_stopped_with: u64,
-        stop_loss_condition_value: u256,
+        stop_loss_condition_value: u64,
         take_profit_condition_stopped_with: u64,
-        take_profit_condition_value: u256,
+        take_profit_condition_value: u64,
         auto_close_condition_closed_with: u64,
-        auto_close_condition_value: u256
+        auto_close_condition_value: u64
     ) acquires PocketStore, ResourceAccountStore {
         let pocket = &mut Pocket {
             id,
@@ -300,16 +300,16 @@ module hamsterpocket::pocket {
         id: String,
         start_at: u64,
         frequency: u64,
-        batch_volume: u256,
+        batch_volume: u64,
         open_position_condition_operator: u64,
-        open_position_condition_value_x: u256,
-        open_position_condition_value_y: u256,
+        open_position_condition_value_x: u64,
+        open_position_condition_value_y: u64,
         stop_loss_condition_stopped_with: u64,
-        stop_loss_condition_value: u256,
+        stop_loss_condition_value: u64,
         take_profit_condition_stopped_with: u64,
-        take_profit_condition_value: u256,
+        take_profit_condition_value: u64,
         auto_close_condition_closed_with: u64,
-        auto_close_condition_value: u256
+        auto_close_condition_value: u64
     ) acquires PocketStore, ResourceAccountStore {
         // now we extract pocket
         let pocket = &mut get_pocket(id);
@@ -348,6 +348,9 @@ module hamsterpocket::pocket {
 
         // validate pocket
         validate_pocket(pocket);
+
+        // commit data changes
+        commit_pocket_data(id, *pocket);
     }
 
     // update withdrawal stats
@@ -359,17 +362,23 @@ module hamsterpocket::pocket {
         pocket.base_token_balance = 0;
         pocket.target_token_balance = 0;
         pocket.status = STATUS_WITHDRAWN;
+
+        // commit data changes
+        commit_pocket_data(id, *pocket);
     }
 
     // update deposit stats
     public(friend) fun update_deposit_stats(
         id: String,
-        amount: u256,
+        amount: u64,
     ) acquires PocketStore, ResourceAccountStore {
         let pocket = &mut get_pocket(id);
 
         pocket.total_deposited_base_amount = amount;
-        pocket.base_token_balance = pocket.base_token_balance + amount
+        pocket.base_token_balance = pocket.base_token_balance + amount;
+
+        // commit data changes
+        commit_pocket_data(id, *pocket);
     }
 
     // update close position stats
@@ -385,6 +394,9 @@ module hamsterpocket::pocket {
         // update balance
         pocket.base_token_balance = pocket.base_token_balance + params.received_base_token_amount;
         pocket.target_token_balance = pocket.target_token_balance - params.swapped_target_token_amount;
+
+        // commit data changes
+        commit_pocket_data(params.id, *pocket);
     }
 
     // update trading stats
@@ -402,6 +414,9 @@ module hamsterpocket::pocket {
         pocket.total_received_target_amount = pocket.total_received_target_amount + params.received_target_token_amount;
         pocket.base_token_balance = pocket.base_token_balance - params.swapped_base_token_amount;
         pocket.target_token_balance = pocket.target_token_balance + params.received_target_token_amount;
+
+        // commit changes
+        commit_pocket_data(params.id, *pocket);
     }
 
     // close pocket on behalf of owner
@@ -412,7 +427,11 @@ module hamsterpocket::pocket {
         // make sure the pocket is able to close
         is_able_to_close(signer, pocket_id, true);
 
+        // update data
         pocket.status = STATUS_CLOSED;
+
+        // commit
+        commit_pocket_data(pocket_id, *pocket);
     }
 
     // restart pocket on behalf of owner
@@ -423,7 +442,10 @@ module hamsterpocket::pocket {
         // make sure the pocket is able to restart
         is_able_to_restart(signer, pocket_id, true);
 
+        // modify data
         pocket.status = STATUS_ACTIVE;
+
+        commit_pocket_data(pocket_id, *pocket);
     }
 
     // pause pocket on behalf of owner
@@ -434,50 +456,10 @@ module hamsterpocket::pocket {
         // make sure the pocket is able to pause
         is_able_to_pause(signer, pocket_id, true);
 
+        // modify data
         pocket.status = STATUS_PAUSED;
-    }
 
-    // get pocket
-    public(friend) fun get_pocket(pocket_id: String): Pocket acquires PocketStore, ResourceAccountStore {
-        // let's find the resource signer of the pocket
-        let owner_address = get_pocket_signer_resource(pocket_id);
-
-        // now we query the pocket
-        let store = borrow_global_mut<PocketStore>(owner_address);
-        let pockets = &mut store.pockets;
-
-        // we check if the pocket id existed
-        assert!(
-            table_with_length::contains(
-                pockets,
-                pocket_id
-            ),
-            error::not_found(NOT_EXISTED_ID)
-        );
-
-        // extract pocket
-        let pocket = table_with_length::borrow(pockets, pocket_id);
-
-        // we check if owner matches with signer
-        assert!(
-            pocket.owner == owner_address,
-            error::permission_denied(INVALID_SIGNER)
-        );
-
-        // return pocket
-        return *pocket
-    }
-
-    public(friend) fun get_trading_info(
-        pocket_id: String
-    ): (address, u256, u256, u256) acquires PocketStore, ResourceAccountStore {
-        let pocket = &get_pocket(pocket_id);
-        return (
-            pocket.owner,
-            pocket.batch_volume,
-            pocket.base_token_balance,
-            pocket.target_token_balance
-        )
+        commit_pocket_data(pocket_id, *pocket);
     }
 
     // check whether the pocket is able to deposit
@@ -626,6 +608,67 @@ module hamsterpocket::pocket {
         };
 
         return result
+    }
+
+    public(friend) fun get_trading_info(
+        pocket_id: String
+    ): (address, u64, u64, u64) acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+        return (
+            pocket.owner,
+            pocket.batch_volume,
+            pocket.base_token_balance,
+            pocket.target_token_balance
+        )
+    }
+
+    // get pocket
+    public(friend) fun get_pocket(
+        pocket_id: String
+    ): Pocket acquires PocketStore, ResourceAccountStore {
+        // let's find the resource signer of the pocket
+        let owner_address = get_pocket_signer_resource(pocket_id);
+
+        // now we query the pocket
+        let store = borrow_global<PocketStore>(owner_address);
+        let pockets = &store.pockets;
+
+        // we check if the pocket id existed
+        assert!(
+            table_with_length::contains(
+                pockets,
+                pocket_id
+            ),
+            error::not_found(NOT_EXISTED_ID)
+        );
+
+        // extract pocket
+        let pocket = table_with_length::borrow(pockets, pocket_id);
+
+        // we check if owner matches with signer
+        assert!(
+            pocket.owner == owner_address,
+            error::permission_denied(INVALID_SIGNER)
+        );
+
+        // return pocket
+        return *pocket
+    }
+
+    // get pocket mut
+    fun commit_pocket_data(
+        pocket_id: String,
+        updated_pocket: Pocket
+    ) acquires PocketStore, ResourceAccountStore {
+        // let's find the resource signer of the pocket
+        let owner_address = get_pocket_signer_resource(pocket_id);
+
+        // now we query the pocket
+        let store = borrow_global_mut<PocketStore>(owner_address);
+        let pockets = &mut store.pockets;
+
+        // return pocket
+        table_with_length::upsert(pockets, pocket_id, updated_pocket)
     }
 
     // get pocket resource signer
