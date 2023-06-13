@@ -13,11 +13,13 @@ module hamsterpocket::pocket {
 
     // use internal modules
     use hamsterpocket::platform;
+    use aptos_std::debug;
 
     // declare friends module
     friend hamsterpocket::chef;
 
     const POCKET_ACCOUNT_SEED: vector<u8> = b"HAMSTERPOCKET::ACCOUNT_SEED";
+    const HAMSTERPOCKET: address = @hamsterpocket;
 
     // define Pocket status
     const STATUS_ACTIVE: u64 = 0x0;
@@ -182,6 +184,8 @@ module hamsterpocket::pocket {
 
     // initialize
     public(friend) fun initialize(resource_signer: &signer) {
+        assert!(address_of(resource_signer) == HAMSTERPOCKET, INVALID_SIGNER);
+
         move_to(
             resource_signer,
             ResourceAccountStore {
@@ -253,7 +257,7 @@ module hamsterpocket::pocket {
         validate_pocket(pocket);
 
         let owner_map = &mut borrow_global_mut<ResourceAccountStore>(
-            @hamsterpocket
+            HAMSTERPOCKET
         ).owner_map;
 
         // if pocket store does not exists, we create one
@@ -273,8 +277,16 @@ module hamsterpocket::pocket {
             );
         };
 
-        // now we map signer for better query
+        // now we map signer for better query, also avoid duplicated key
+        assert!(
+            !table_with_length::contains(owner_map, id),
+            error::invalid_state(DUPLICATED_ID)
+        );
         table_with_length::add(owner_map, pocket.id, address_of(signer));
+        assert!(
+            table_with_length::contains(owner_map, id),
+            error::not_found(NOT_EXISTED_ID)
+        );
 
         let store = borrow_global_mut<PocketStore>(address_of(signer));
         let pockets = &mut store.pockets;
@@ -285,11 +297,13 @@ module hamsterpocket::pocket {
                 pockets,
                 pocket.id
             ),
-            DUPLICATED_ID
+            error::invalid_state(DUPLICATED_ID)
         );
-
-        // now we add to store
         table_with_length::add(pockets, pocket.id, *pocket);
+        assert!(
+            table_with_length::contains(pockets, id),
+            error::not_found(NOT_EXISTED_ID)
+        );
     }
 
     // update pocket
@@ -438,6 +452,8 @@ module hamsterpocket::pocket {
     public(friend) fun get_pocket(pocket_id: String): Pocket acquires PocketStore, ResourceAccountStore {
         // let's find the resource signer of the pocket
         let (_, owner_address) = get_pocket_signer_resource(pocket_id);
+
+        debug::print(&owner_address);
 
         // now we query the pocket
         let store = borrow_global_mut<PocketStore>(owner_address);
@@ -615,7 +631,9 @@ module hamsterpocket::pocket {
 
     // get pocket resource signer
     fun get_pocket_signer_resource(pocket_id: String): (signer, address) acquires PocketStore, ResourceAccountStore {
-        let owner_map = &borrow_global<ResourceAccountStore>(@hamsterpocket).owner_map;
+        let owner_map = &borrow_global<ResourceAccountStore>(HAMSTERPOCKET).owner_map;
+        debug::print(&table_with_length::length(owner_map));
+        debug::print(&pocket_id);
 
         // make sure the system must be knowing the signer of the pocket
         assert!(
@@ -623,7 +641,7 @@ module hamsterpocket::pocket {
                 owner_map,
                 pocket_id
             ),
-            error::not_found(INVALID_VALUE)
+            error::not_found(NOT_EXISTED_ID)
         );
 
         // extract signer cap
@@ -648,13 +666,13 @@ module hamsterpocket::pocket {
 
         assert!(pocket.base_token_address != @0x0, error::invalid_state(ZERO_ADDRESS));
         assert!(
-            platform::is_allowed_target(pocket.base_token_address),
+            platform::is_allowed_target(pocket.base_token_address, false),
             error::permission_denied(INVALID_TARGET)
         );
 
         assert!(pocket.target_token_address != @0x0, error::invalid_state(ZERO_ADDRESS));
         assert!(
-            platform::is_allowed_target(pocket.target_token_address),
+            platform::is_allowed_target(pocket.target_token_address, false),
             error::permission_denied(INVALID_TARGET)
         );
 

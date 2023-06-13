@@ -16,4 +16,6 @@ describe("hamsterpocket", function () {
 
   require("./specs/faucet.spec");
   require("./specs/deployment.spec");
+  require("./specs/administration.spec");
+  require("./specs/manage.spec");
 });

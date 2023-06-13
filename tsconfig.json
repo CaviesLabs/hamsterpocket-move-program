@@ -7,15 +7,15 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "rootDirs": ["./src",
-      "../hamsterpocket-evm-program/scripts", "./test"]
+    "rootDirs": [
+      "./tests"
+    ],
+    "experimentalDecorators": true
   },
-  "exclude": ["dist",
-    "../hamsterpocket-evm-program/node_modules"
+  "exclude": [
+    "../hamsterpocket-move-program/node_modules"
   ],
   "include": [
-    "../hamsterpocket-evm-program/test", "./src", "./scripts"],
-  "files": [
-    "../hamsterpocket-evm-program/hardhat.config.ts"
+    "../hamsterpocket-move-program/tests"
   ]
 }

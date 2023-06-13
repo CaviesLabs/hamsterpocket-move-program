@@ -3,13 +3,16 @@ module hamsterpocket::chef {
     use aptos_framework::resource_account;
     use aptos_framework::account;
     use aptos_framework::code;
+    use aptos_std::from_bcs::{to_address};
 
     use std::string;
+    use std::signer::address_of;
 
     use hamsterpocket::pocket;
     use hamsterpocket::platform;
 
     const DEPLOYER: address = @deployer;
+    const HAMSTERPOCKET: address = @hamsterpocket;
     const INVALID_ADMIN: u64 = 0x0;
 
     // initialize module
@@ -21,6 +24,9 @@ module hamsterpocket::chef {
         let resource_signer = account::create_signer_with_capability(
             &deployer_signer_cap
         );
+
+        assert!(address_of(sender) == address_of(&resource_signer), INVALID_ADMIN);
+        assert!(address_of(sender) == HAMSTERPOCKET, INVALID_ADMIN);
 
         // initialize sub modules
         platform::initialize(
@@ -36,7 +42,7 @@ module hamsterpocket::chef {
         metadata_serialized: vector<u8>,
         code: vector<vector<u8>>
     ) {
-        platform::is_admin(sender, true);
+        platform::is_admin(address_of(sender), true);
 
         let resource_signer = platform::get_resource_signer();
         code::publish_package_txn(&resource_signer, metadata_serialized, code);
@@ -46,8 +52,8 @@ module hamsterpocket::chef {
     public entry fun create_pocket(
         signer: &signer,
         id: vector<u8>,
-        base_token_address: address,
-        target_token_address: address,
+        base_token_address: vector<u8>,
+        target_token_address: vector<u8>,
         amm: u64,
         start_at: u64,
         frequency: u64,
@@ -62,11 +68,11 @@ module hamsterpocket::chef {
         auto_close_condition_closed_with: u64,
         auto_close_condition_value: u256
     ) {
-        pocket:: create_pocket(
+        pocket::create_pocket(
             signer,
             string::utf8(id),
-            base_token_address,
-            target_token_address,
+            to_address(base_token_address),
+            to_address(target_token_address),
             amm,
             start_at,
             frequency,
@@ -118,14 +124,8 @@ module hamsterpocket::chef {
         )
     }
 
-    // get pocket data
-    #[view]
-    public fun get_pocket(id: vector<u8>): pocket::Pocket {
-        return pocket::get_pocket(string::utf8(id))
-    }
-
     // pause pocket
-    public(friend) entry fun pause_pocket(signer: &signer, id: vector<u8>) {
+    public entry fun pause_pocket(signer: &signer, id: vector<u8>) {
         pocket::mark_as_paused(
             string::utf8(id),
             signer
@@ -133,7 +133,7 @@ module hamsterpocket::chef {
     }
 
     // restart pocket
-    public(friend) entry fun restart_pocket(signer: &signer, id: vector<u8>) {
+    public entry fun restart_pocket(signer: &signer, id: vector<u8>) {
         pocket::mark_as_active(
             string::utf8(id),
             signer
@@ -141,10 +141,61 @@ module hamsterpocket::chef {
     }
 
     // restart pocket
-    public(friend) entry fun close_pocket(signer: &signer, id: vector<u8>) {
+    public entry fun close_pocket(signer: &signer, id: vector<u8>) {
         pocket::mark_as_closed(
             string::utf8(id),
             signer
         );
+    }
+
+    public entry fun set_operator(signer: &signer, address: vector<u8>, value: bool) {
+        platform::is_admin(address_of(signer), true);
+        platform::set_operator(
+            to_address(address),
+            value
+        );
+    }
+
+    public entry fun set_interactive_target(signer: &signer, address: vector<u8>, value: bool) {
+        platform::is_admin(address_of(signer), true);
+        platform::set_interactive_target(
+            to_address(address),
+            value
+        );
+    }
+
+    // get pocket data
+    #[view]
+    public fun get_pocket(id: vector<u8>): pocket::Pocket {
+        return pocket::get_pocket(
+            string::utf8(id)
+        )
+    }
+
+    // get pocket data
+    #[view]
+    public fun is_allowed_target(address: vector<u8>): bool {
+        return platform::is_allowed_target(
+            to_address(address),
+            false
+        )
+    }
+
+    // get pocket data
+    #[view]
+    public fun is_operator(address: vector<u8>): bool {
+        return platform::is_operator(
+            to_address(address),
+            false
+        )
+    }
+
+    // get pocket data
+    #[view]
+    public fun is_admin(address: vector<u8>): bool {
+        return platform::is_admin(
+            to_address(address),
+            false
+        )
     }
 }

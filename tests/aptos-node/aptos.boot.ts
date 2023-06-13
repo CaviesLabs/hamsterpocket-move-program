@@ -1,8 +1,9 @@
 import { ChildProcessWithoutNullStreams } from "child_process";
+
 import { UtilsProvider } from "./utils.provider";
 
 export class AptosBootingManager {
-  private currentProcess: ChildProcessWithoutNullStreams = null;
+  private currentProcess: ChildProcessWithoutNullStreams | undefined;
 
   public static PRIVATE_KEY =
     "0xeaa4eea8ac8048dfd7e3da319ad0834f9a10b171d2186318255f451b5baf6d90";
@@ -29,19 +30,19 @@ export class AptosBootingManager {
       "--force-restart",
     ]);
 
-    this.currentProcess.stdout.on("data", (data) => {
+    this.currentProcess?.stdout.on("data", (data) => {
       console.log(`stdout: ${data}`);
     });
 
-    this.currentProcess.stderr.on("data", (data) => {
+    this.currentProcess?.stderr.on("data", (data) => {
       console.log(`stderr: ${data}`);
     });
 
-    this.currentProcess.on("error", (error) => {
+    this.currentProcess?.on("error", (error) => {
       console.log(`error: ${error.message}`);
     });
 
-    this.currentProcess.on("close", (code) => {
+    this.currentProcess?.on("close", (code) => {
       console.log(`child process exited with code ${code}`);
     });
 
