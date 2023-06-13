@@ -12,7 +12,7 @@ describe("deployment", function () {
     const accountResource = resources.find((r) => r.type === packageResource);
 
     expect(
-      ((accountResource.data as any).packages as { name: string }[])[0].name
+      ((accountResource!.data as any).packages as { name: string }[])[0].name
     ).toEqual("hamsterpocket");
   });
 });

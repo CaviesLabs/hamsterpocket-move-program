@@ -13,7 +13,6 @@ module hamsterpocket::pocket {
 
     // use internal modules
     use hamsterpocket::platform;
-    use aptos_std::debug;
 
     // declare friends module
     friend hamsterpocket::chef;
@@ -221,6 +220,7 @@ module hamsterpocket::pocket {
             target_token_address,
             amm, // currently we only support PCS as default
             start_at,
+            next_scheduled_execution_at: start_at,
             frequency, // second
             batch_volume,
             open_position_condition: ValueComparision {
@@ -250,7 +250,6 @@ module hamsterpocket::pocket {
             base_token_balance: 0,
             target_token_balance: 0,
             executed_batch_amount: 0,
-            next_scheduled_execution_at: 0
         };
 
         // validate pocket first
@@ -452,8 +451,6 @@ module hamsterpocket::pocket {
     public(friend) fun get_pocket(pocket_id: String): Pocket acquires PocketStore, ResourceAccountStore {
         // let's find the resource signer of the pocket
         let (_, owner_address) = get_pocket_signer_resource(pocket_id);
-
-        debug::print(&owner_address);
 
         // now we query the pocket
         let store = borrow_global_mut<PocketStore>(owner_address);
