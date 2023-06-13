@@ -1,7 +1,8 @@
+import { AptosAccount } from "aptos";
+
 import { TransactionSigner } from "../client/transaction.client";
 import { TransactionBuilder } from "../client/transaction.builder";
 import { AptosBootingManager } from "../aptos-node/aptos.boot";
-
 import {
   AMM,
   AutoCloseConditionClosedWith,
@@ -38,17 +39,41 @@ describe("manage_pocket", function () {
   };
 
   beforeAll(async () => {
-    signer = new TransactionSigner(
-      AptosBootingManager.PRIVATE_KEY,
-      AptosBootingManager.APTOS_NODE_URL
+    /**
+     * @dev create new account
+     */
+    const aptosAccount = new AptosAccount();
+
+    /**
+     * @dev funding account
+     */
+    await AptosBootingManager.getInstance().fundingWithFaucet(
+      aptosAccount.address().hex()
     );
 
+    /**
+     * @dev build signer and tx builder
+     */
+    signer = new TransactionSigner(
+      aptosAccount.toPrivateKeyObject().privateKeyHex,
+      AptosBootingManager.APTOS_NODE_URL
+    );
     txBuilder = new TransactionBuilder(signer);
+
+    /**
+     * @dev Build admin tx builder
+     */
+    const adminTxBuilder = new TransactionBuilder(
+      new TransactionSigner(
+        AptosBootingManager.PRIVATE_KEY,
+        AptosBootingManager.APTOS_NODE_URL
+      )
+    );
 
     /**
      * @dev Whitelist target first
      */
-    await txBuilder
+    await adminTxBuilder
       .buildSetInteractiveTargetTransaction({
         target:
           "0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa",
@@ -69,6 +94,7 @@ describe("manage_pocket", function () {
 
     // expect
     expect(transformedPocket.id).toEqual(pocketData.id);
+    expect(transformedPocket.owner).toEqual(signer.getAddress().hex());
     expect(transformedPocket.start_at).toEqual(
       transformedPocket.next_scheduled_execution_at
     );
