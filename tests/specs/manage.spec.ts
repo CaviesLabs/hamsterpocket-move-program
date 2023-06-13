@@ -94,7 +94,9 @@ describe("manage_pocket", function () {
 
     // expect
     expect(transformedPocket.id).toEqual(pocketData.id);
-    expect(transformedPocket.owner).toEqual(signer.getAddress().hex());
+    expect(transformedPocket.owner).toEqual(
+      signer.getAddress().toShortString()
+    );
     expect(transformedPocket.start_at).toEqual(
       transformedPocket.next_scheduled_execution_at
     );
