@@ -70,4 +70,11 @@ export class TransactionSigner {
   public getAddress() {
     return this.account.address();
   }
+
+  /**
+   * @notice Expose client for external use
+   */
+  public getClient() {
+    return this.client;
+  }
 }

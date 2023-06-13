@@ -201,13 +201,13 @@ module hamsterpocket::chef {
             target_token_balance
         ) = pocket::get_trading_info(pocket_id);
 
-        // deposit to vault
+        // deposit from vault
         vault::withdraw<BaseToken>(
             signer,
             base_token_balance
         );
 
-        // deposit to vault
+        // withdraw from vault
         vault::withdraw<TargetToken>(
             signer,
             target_token_balance
@@ -264,6 +264,16 @@ module hamsterpocket::chef {
     public fun get_pocket(id: vector<u8>): pocket::Pocket {
         return pocket::get_pocket(
             string::utf8(id)
+        )
+    }
+
+    // get pocket data
+    #[view]
+    public fun get_delegated_vault_address(address: vector<u8>): address {
+        return address_of(
+            &vault::get_resource_signer(
+                to_address(address)
+            )
         )
     }
 

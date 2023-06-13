@@ -4,15 +4,22 @@ import * as BCS from "./libs/bcs.helper";
 import { AptosBootingManager } from "../aptos-node/aptos.boot";
 import {
   CreatePocketParams,
+  DepositParams,
   GetPocketParams,
   SetAllowedOperator,
   SetInteractiveTargetParams,
   UpdatePocketParams,
+  WithdrawParams,
 } from "./params.type";
 import { TransactionSigner } from "./transaction.client";
 import { PocketResponseType } from "./response.type";
 
-const { EntryFunction, TransactionPayloadEntryFunction } = TxnBuilderTypes;
+const {
+  EntryFunction,
+  TransactionPayloadEntryFunction,
+  TypeTagStruct,
+  StructTag,
+} = TxnBuilderTypes;
 
 interface Executor<T> {
   execute: () => Promise<T>;
@@ -81,6 +88,59 @@ export class TransactionBuilder {
   }
 
   /**
+   * @notice Build deposit transaction
+   * @param params
+   */
+  public buildDepositTransaction(params: DepositParams) {
+    const tokenTag = new TypeTagStruct(
+      StructTag.fromString(`${params.tokenAddress}::aptos_coin::AptosCoin`)
+    );
+
+    /**
+     * @dev Build transaction
+     */
+    return this.getTransactionalExecutor(
+      new TransactionPayloadEntryFunction(
+        EntryFunction.natural(
+          `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef`,
+          "deposit",
+          [tokenTag],
+          [BCS.bcsSerializeStr(params.id), BCS.bcsSerializeU64(params.amount)]
+        )
+      )
+    );
+  }
+
+  /**
+   * @notice Build withdraw transaction
+   * @param params
+   */
+  public buildWithdrawTransaction(params: WithdrawParams) {
+    const baseToken = new TypeTagStruct(
+      StructTag.fromString(`${params.baseTokenAddress}::aptos_coin::AptosCoin`)
+    );
+    const targetToken = new TypeTagStruct(
+      StructTag.fromString(
+        `${params.targetTokenAddress}::aptos_coin::AptosCoin`
+      )
+    );
+
+    /**
+     * @dev Build transaction
+     */
+    return this.getTransactionalExecutor(
+      new TransactionPayloadEntryFunction(
+        EntryFunction.natural(
+          `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef`,
+          "withdraw",
+          [baseToken, targetToken],
+          [BCS.bcsSerializeStr(params.id)]
+        )
+      )
+    );
+  }
+
+  /**
    * @notice Build set interactive target transaction
    * @param params
    */
@@ -97,9 +157,7 @@ export class TransactionBuilder {
           "set_interactive_target",
           [],
           [
-            BCS.bcsSerializeBytes(
-              HexString.ensure(params.target).toUint8Array()
-            ),
+            BCS.bcsSerializeBytes(new HexString(params.target).toUint8Array()),
             BCS.bcsSerializeBool(params.value),
           ]
         )
@@ -243,7 +301,7 @@ export class TransactionBuilder {
   }
 
   /**
-   * @notice Build update pocket transaction
+   * @notice Build get pocket
    * @param params
    */
   public buildGetPocket(params: GetPocketParams) {
@@ -262,7 +320,7 @@ export class TransactionBuilder {
   }
 
   /**
-   * @notice Build update pocket transaction
+   * @notice Build check for allowed admin
    * @param address
    */
   public buildCheckForAllowedAdmin(address: string) {
@@ -277,7 +335,7 @@ export class TransactionBuilder {
   }
 
   /**
-   * @notice Build update pocket transaction
+   * @notice Build check for allowed target
    * @param address
    */
   public buildCheckForAllowedTarget(address: string) {
@@ -292,7 +350,7 @@ export class TransactionBuilder {
   }
 
   /**
-   * @notice Build update pocket transaction
+   * @notice Build check for allowed operator
    * @param address
    */
   public buildCheckForAllowedOperator(address: string) {
@@ -302,6 +360,21 @@ export class TransactionBuilder {
     return this.getViewExecutor<[boolean]>({
       function: `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef::is_operator`,
       arguments: [HexString.ensure(address).toString()],
+      type_arguments: [],
+    });
+  }
+
+  /**
+   * @notice Build get delegated vault address
+   * @param signer
+   */
+  public buildGetDelegatedVaultAddress(signer: string) {
+    /**
+     * @dev Build transaction
+     */
+    return this.getViewExecutor<[string]>({
+      function: `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef::get_delegated_vault_address`,
+      arguments: [HexString.ensure(signer).toString()],
       type_arguments: [],
     });
   }

@@ -18,4 +18,5 @@ describe("hamsterpocket", function () {
   require("./specs/deployment.spec");
   require("./specs/administration.spec");
   require("./specs/manage.spec");
+  require("./specs/vault.spec");
 });

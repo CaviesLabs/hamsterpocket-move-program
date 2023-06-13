@@ -102,6 +102,45 @@ describe("manage_pocket", function () {
     );
     expect(transformedPocket.start_at).toEqual(pocketData.startAt);
     expect(transformedPocket.status).toEqual(PocketStatus.STATUS_ACTIVE);
+    expect(transformedPocket.open_position_condition.operator).toEqual(
+      OpenPositionOperator.UNSET
+    );
+    expect(transformedPocket.open_position_condition.value_x).toEqual(
+      BigInt(0)
+    );
+    expect(transformedPocket.open_position_condition.value_x).toEqual(
+      BigInt(0)
+    );
+  });
+
+  it("[manage_pocket] should: update pocket successfully", async () => {
+    // create pocket
+    await txBuilder
+      .buildUpdatePocketTransaction({
+        ...pocketData,
+        openPositionConditionOperator: OpenPositionOperator.OPERATOR_GTE,
+        openPositionConditionValueX: BigInt(1),
+        openPositionConditionValueY: BigInt(10),
+      })
+      .execute();
+
+    // fetch pocket
+    const [pocketResponse] = await txBuilder
+      .buildGetPocket({ id: pocketData.id })
+      .execute();
+    const transformedPocket = transformPocketEntity(pocketResponse);
+
+    // expect
+    expect(transformedPocket.id).toEqual(pocketData.id);
+    expect(transformedPocket.open_position_condition.operator).toEqual(
+      OpenPositionOperator.OPERATOR_GTE
+    );
+    expect(transformedPocket.open_position_condition.value_x).toEqual(
+      BigInt(1)
+    );
+    expect(transformedPocket.open_position_condition.value_y).toEqual(
+      BigInt(10)
+    );
   });
 
   it("[manage_pocket] should: can pause pocket", async () => {

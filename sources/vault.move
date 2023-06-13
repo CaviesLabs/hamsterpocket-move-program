@@ -49,7 +49,7 @@ module hamsterpocket::vault {
 
             table_with_length::add(
                 signer_map,
-                address_of(&resource_account),
+                address_of(sender),
                 cap
             );
         } else {
@@ -97,7 +97,7 @@ module hamsterpocket::vault {
     }
 
     // get resource signer
-    fun get_resource_signer(sender: address): signer acquires PocketSignerMap {
+    public(friend) fun get_resource_signer(sender: address): signer acquires PocketSignerMap {
         let signer_map = &mut borrow_global_mut<PocketSignerMap>(
             HAMSTERPOCKET
         ).signer_map;

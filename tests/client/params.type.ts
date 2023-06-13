@@ -5,6 +5,18 @@ import {
   StopConditionStoppedWith,
 } from "./entities/pocket.entity";
 
+export interface DepositParams {
+  id: string;
+  tokenAddress: string;
+  amount: bigint;
+}
+
+export interface WithdrawParams {
+  id: string;
+  baseTokenAddress: string;
+  targetTokenAddress: string;
+}
+
 export interface CreatePocketParams {
   id: string;
   baseTokenAddress: string;
