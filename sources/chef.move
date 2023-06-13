@@ -10,6 +10,7 @@ module hamsterpocket::chef {
 
     use hamsterpocket::pocket;
     use hamsterpocket::platform;
+    use hamsterpocket::vault;
 
     const DEPLOYER: address = @deployer;
     const HAMSTERPOCKET: address = @hamsterpocket;
@@ -34,6 +35,7 @@ module hamsterpocket::chef {
             deployer_signer_cap
         );
         pocket::initialize(&resource_signer);
+        vault::initialize(&resource_signer);
     }
 
     // upgrade programatically, only admin can perform upgrade
@@ -124,6 +126,54 @@ module hamsterpocket::chef {
         )
     }
 
+    // deposit
+    public entry fun deposit<TokenType>(signer: &signer, id: vector<u8>, amount: u64) {
+        let pocket_id = string::utf8(id);
+
+        // make sure the pocket is able to deposit
+        pocket::is_able_to_deposit(signer, pocket_id, true);
+
+        // deposit to vault
+        vault::deposit<TokenType>(
+            signer,
+            amount
+        );
+
+        // update deposit stats
+        pocket::update_deposit_stats(pocket_id, (amount as u256));
+    }
+
+    // withdraw
+    public entry fun withdraw<BaseToken, TargetToken>(signer: &signer, id: vector<u8>) {
+        let pocket_id = string::utf8(id);
+
+        // make sure the pocket is able to deposit
+        pocket::is_able_to_withdraw(signer, pocket_id, true);
+
+        // extract trading info
+        let (
+            _,
+            _,
+            base_token_balance,
+            target_token_balance
+        ) = pocket::get_trading_info(pocket_id);
+
+        // deposit to vault
+        vault::withdraw<BaseToken>(
+            signer,
+            (base_token_balance as u64)
+        );
+
+        // deposit to vault
+        vault::withdraw<TargetToken>(
+            signer,
+            (target_token_balance as u64)
+        );
+
+        // update deposit stats
+        pocket::update_withdrawal_stats(pocket_id);
+    }
+
     // pause pocket
     public entry fun pause_pocket(signer: &signer, id: vector<u8>) {
         pocket::mark_as_paused(
@@ -148,6 +198,7 @@ module hamsterpocket::chef {
         );
     }
 
+    // set operator, only available for admin
     public entry fun set_operator(signer: &signer, address: vector<u8>, value: bool) {
         platform::is_admin(address_of(signer), true);
         platform::set_operator(
@@ -156,6 +207,7 @@ module hamsterpocket::chef {
         );
     }
 
+    // set interactive target, only available for admin
     public entry fun set_interactive_target(signer: &signer, address: vector<u8>, value: bool) {
         platform::is_admin(address_of(signer), true);
         platform::set_interactive_target(
@@ -172,7 +224,7 @@ module hamsterpocket::chef {
         )
     }
 
-    // get pocket data
+    // check for allowed target
     #[view]
     public fun is_allowed_target(address: vector<u8>): bool {
         return platform::is_allowed_target(
@@ -181,7 +233,7 @@ module hamsterpocket::chef {
         )
     }
 
-    // get pocket data
+    // check for allowed operator
     #[view]
     public fun is_operator(address: vector<u8>): bool {
         return platform::is_operator(
@@ -190,7 +242,7 @@ module hamsterpocket::chef {
         )
     }
 
-    // get pocket data
+    // check for allowed admin
     #[view]
     public fun is_admin(address: vector<u8>): bool {
         return platform::is_admin(

@@ -64,5 +64,9 @@ describe("[manage_pocket]", function () {
     const transformedPocket = transformPocketEntity(pocketResponse);
 
     expect(transformedPocket.id).toEqual(pocketData.id);
+    expect(transformedPocket.start_at).toEqual(
+      transformedPocket.next_scheduled_execution_at
+    );
+    expect(transformedPocket.start_at).toEqual(pocketData.startAt);
   });
 });

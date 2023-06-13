@@ -3,6 +3,7 @@ module hamsterpocket::platform {
     use aptos_std::table_with_length;
     use aptos_framework::account::SignerCapability;
     use std::error;
+    use std::signer::address_of;
 
     friend hamsterpocket::chef;
     friend hamsterpocket::pocket;
@@ -25,10 +26,10 @@ module hamsterpocket::platform {
 
     // init module will be called automatically whenever the module is published
     public(friend) fun initialize(
-        resource_signer: &signer,
+        hamsterpocket_signer: &signer,
         signer_cap: SignerCapability
     ) acquires PlatformConfig {
-        move_to(resource_signer, PlatformConfig {
+        move_to(hamsterpocket_signer, PlatformConfig {
             deployer_capibility: signer_cap,
             allowed_operators: table_with_length::new<address, bool>(),
             allowed_interactive_targets: table_with_length::new<address, bool>(),
@@ -43,9 +44,10 @@ module hamsterpocket::platform {
                 &config.allowed_admins,
                 DEPLOYER
             ),
-            INVALID_ADMIN
+            error::invalid_state(INVALID_ADMIN)
         );
         is_admin(DEPLOYER, true);
+        assert!(address_of(&get_resource_signer()) == HAMSTERPOCKET, error::invalid_state(INVALID_ADMIN));
     }
 
     // get resource signer
