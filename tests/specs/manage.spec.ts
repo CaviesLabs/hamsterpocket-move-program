@@ -13,6 +13,8 @@ import {
 } from "../client/entities/pocket.entity";
 import { CreatePocketParams } from "../client/params.type";
 
+const aptosNode = AptosBootingManager.getInstance();
+
 describe("manage_pocket", function () {
   let signer: TransactionSigner;
   let txBuilder: TransactionBuilder;
@@ -65,7 +67,7 @@ describe("manage_pocket", function () {
      */
     const adminTxBuilder = new TransactionBuilder(
       new TransactionSigner(
-        AptosBootingManager.PRIVATE_KEY,
+        aptosNode.getDeployerAccount().toPrivateKeyObject().privateKeyHex,
         AptosBootingManager.APTOS_NODE_URL
       )
     );

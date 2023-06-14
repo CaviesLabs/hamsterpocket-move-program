@@ -12,7 +12,9 @@ import {
   transformPocketEntity,
 } from "../client/entities/pocket.entity";
 import { AptosBootingManager } from "../aptos-node/aptos.boot";
-import { APTOS_COIN_ADDRESS } from "../client/libs/constants";
+import { APTOS_GENESIS_ADDRESS } from "../client/libs/constants";
+
+const aptosNode = AptosBootingManager.getInstance();
 
 describe("vault", function () {
   let signer: TransactionSigner;
@@ -22,8 +24,8 @@ describe("vault", function () {
   const pocketData: CreatePocketParams = {
     id: "test-vault-pocket-data",
     amm: AMM.PCS,
-    baseTokenAddress: APTOS_COIN_ADDRESS,
-    targetTokenAddress: APTOS_COIN_ADDRESS,
+    baseTokenAddress: APTOS_GENESIS_ADDRESS,
+    targetTokenAddress: APTOS_GENESIS_ADDRESS,
     batchVolume: BigInt(1000),
     frequency: BigInt(3600),
     startAt: BigInt(parseInt((new Date().getTime() / 1000).toString())),
@@ -66,7 +68,7 @@ describe("vault", function () {
      */
     const adminTxBuilder = new TransactionBuilder(
       new TransactionSigner(
-        AptosBootingManager.PRIVATE_KEY,
+        aptosNode.getDeployerAccount().toPrivateKeyObject().privateKeyHex,
         AptosBootingManager.APTOS_NODE_URL
       )
     );
@@ -76,7 +78,7 @@ describe("vault", function () {
      */
     await adminTxBuilder
       .buildSetInteractiveTargetTransaction({
-        target: APTOS_COIN_ADDRESS,
+        target: APTOS_GENESIS_ADDRESS,
         value: true,
       })
       .execute();
@@ -116,7 +118,7 @@ describe("vault", function () {
      */
     await txBuilder
       .buildDepositTransaction({
-        tokenAddress: APTOS_COIN_ADDRESS,
+        tokenAddress: APTOS_GENESIS_ADDRESS,
         amount: BigInt(10000),
         id: pocketData.id,
       })
@@ -185,8 +187,8 @@ describe("vault", function () {
      */
     await txBuilder
       .buildWithdrawTransaction({
-        baseTokenAddress: APTOS_COIN_ADDRESS,
-        targetTokenAddress: APTOS_COIN_ADDRESS,
+        baseTokenAddress: APTOS_GENESIS_ADDRESS,
+        targetTokenAddress: APTOS_GENESIS_ADDRESS,
         id: pocketData.id,
       })
       .execute();

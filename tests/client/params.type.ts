@@ -61,7 +61,18 @@ export interface SetInteractiveTargetParams {
   value: boolean;
 }
 
-export interface SetAllowedOperator {
+export interface SetAllowedOperatorParams {
   target: string;
   value: boolean;
+}
+
+export interface GetResourceAccountParams {
+  ownerAddress: string;
+  seed: string;
+}
+
+export interface CreateResourceAccountParams {
+  seed: string;
+  ownerAddress: string;
+  amountToFund: bigint;
 }

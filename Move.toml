@@ -7,7 +7,7 @@ upgrade_policy = "compatible"
 AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "72421d32d77f1877ded478e96f5b95914de1df91" }
 AptosStdlib = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-stdlib/", rev = "72421d32d77f1877ded478e96f5b95914de1df91" }
 AptosToken = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-token/", rev = "72421d32d77f1877ded478e96f5b95914de1df91" }
-#PancakeSwap = { git = "https://github.com/pancakeswap/pancake-contracts-move.git", subdir = "pancake-swap/", rev = "c3432e5473606e414323572e06c0f032d2d3321c" }
+PancakeSwap = { git = "https://github.com/pancakeswap/pancake-contracts-move.git", subdir = "pancake-swap/", rev = "c3432e5473606e414323572e06c0f032d2d3321c" }
 
 [addresses]
 hamsterpocket = "93978b7674234c90003f608e7f33856c652edcaeb8280584ae44c61ea1b2539a"

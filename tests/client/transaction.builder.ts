@@ -1,18 +1,20 @@
 import { HexString, TxnBuilderTypes } from "aptos";
 
 import * as BCS from "./libs/bcs.helper";
-import { AptosBootingManager } from "../aptos-node/aptos.boot";
 import {
   CreatePocketParams,
+  CreateResourceAccountParams,
   DepositParams,
   GetPocketParams,
-  SetAllowedOperator,
+  GetResourceAccountParams,
+  SetAllowedOperatorParams,
   SetInteractiveTargetParams,
   UpdatePocketParams,
   WithdrawParams,
 } from "./params.type";
 import { TransactionSigner } from "./transaction.client";
 import { PocketResponseType } from "./response.type";
+import { APTOS_GENESIS_ADDRESS } from "./libs/constants";
 
 const {
   EntryFunction,
@@ -29,7 +31,10 @@ interface Executor<T> {
  * @notice Aptos Transaction Builder. Output would be raw transaction hex.
  */
 export class TransactionBuilder {
-  constructor(private signer: TransactionSigner) {}
+  constructor(
+    private signer: TransactionSigner,
+    private resourceAccount?: string
+  ) {}
 
   /**
    * @notice Get transactional executor
@@ -61,11 +66,11 @@ export class TransactionBuilder {
   }
 
   /**
-   * @notice Build set allowed operator transaction
+   * @notice Build create resource account transaction
    * @param params
    */
-  public buildSetOperatorTransaction(
-    params: SetAllowedOperator
+  public buildCreateResourceAccountTransaction(
+    params: CreateResourceAccountParams
   ): Executor<{ txId: string }> {
     /**
      * @dev Build transaction
@@ -73,7 +78,35 @@ export class TransactionBuilder {
     return this.getTransactionalExecutor(
       new TransactionPayloadEntryFunction(
         EntryFunction.natural(
-          `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef`,
+          `${APTOS_GENESIS_ADDRESS}::resource_account`,
+          "create_resource_account_and_fund",
+          [],
+          [
+            BCS.bcsSerializeBytes(new TextEncoder().encode(params.seed)),
+            BCS.bcsSerializeBytes(
+              HexString.ensure(params.ownerAddress).toUint8Array()
+            ),
+            BCS.bcsSerializeU64(params.amountToFund),
+          ]
+        )
+      )
+    );
+  }
+
+  /**
+   * @notice Build set allowed operator transaction
+   * @param params
+   */
+  public buildSetOperatorTransaction(
+    params: SetAllowedOperatorParams
+  ): Executor<{ txId: string }> {
+    /**
+     * @dev Build transaction
+     */
+    return this.getTransactionalExecutor(
+      new TransactionPayloadEntryFunction(
+        EntryFunction.natural(
+          `${this.resourceAccount}::chef`,
           "set_operator",
           [],
           [
@@ -102,7 +135,7 @@ export class TransactionBuilder {
     return this.getTransactionalExecutor(
       new TransactionPayloadEntryFunction(
         EntryFunction.natural(
-          `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef`,
+          `${this.resourceAccount}::chef`,
           "deposit",
           [tokenTag],
           [BCS.bcsSerializeStr(params.id), BCS.bcsSerializeU64(params.amount)]
@@ -131,7 +164,7 @@ export class TransactionBuilder {
     return this.getTransactionalExecutor(
       new TransactionPayloadEntryFunction(
         EntryFunction.natural(
-          `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef`,
+          `${this.resourceAccount}::chef`,
           "withdraw",
           [baseToken, targetToken],
           [BCS.bcsSerializeStr(params.id)]
@@ -153,7 +186,7 @@ export class TransactionBuilder {
     return this.getTransactionalExecutor(
       new TransactionPayloadEntryFunction(
         EntryFunction.natural(
-          `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef`,
+          `${this.resourceAccount}::chef`,
           "set_interactive_target",
           [],
           [
@@ -176,7 +209,7 @@ export class TransactionBuilder {
     return this.getTransactionalExecutor(
       new TransactionPayloadEntryFunction(
         EntryFunction.natural(
-          `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef`,
+          `${this.resourceAccount}::chef`,
           "create_pocket",
           [],
           [
@@ -217,7 +250,7 @@ export class TransactionBuilder {
     return this.getTransactionalExecutor(
       new TransactionPayloadEntryFunction(
         EntryFunction.natural(
-          `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef`,
+          `${this.resourceAccount}::chef`,
           "update_pocket",
           [],
           [
@@ -251,7 +284,7 @@ export class TransactionBuilder {
     return this.getTransactionalExecutor(
       new TransactionPayloadEntryFunction(
         EntryFunction.natural(
-          `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef`,
+          `${this.resourceAccount}::chef`,
           "pause_pocket",
           [],
           [BCS.bcsSerializeStr(params.id)]
@@ -271,7 +304,7 @@ export class TransactionBuilder {
     return this.getTransactionalExecutor(
       new TransactionPayloadEntryFunction(
         EntryFunction.natural(
-          `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef`,
+          `${this.resourceAccount}::chef`,
           "restart_pocket",
           [],
           [BCS.bcsSerializeStr(params.id)]
@@ -291,7 +324,7 @@ export class TransactionBuilder {
     return this.getTransactionalExecutor(
       new TransactionPayloadEntryFunction(
         EntryFunction.natural(
-          `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef`,
+          `${this.resourceAccount}::chef`,
           "close_pocket",
           [],
           [BCS.bcsSerializeStr(params.id)]
@@ -309,7 +342,7 @@ export class TransactionBuilder {
      * @dev Build transaction
      */
     return this.getViewExecutor<[PocketResponseType]>({
-      function: `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef::get_pocket`,
+      function: `${this.resourceAccount}::chef::get_pocket`,
       arguments: [
         HexString.fromUint8Array(
           new TextEncoder().encode(params.id)
@@ -328,7 +361,7 @@ export class TransactionBuilder {
      * @dev Build transaction
      */
     return this.getViewExecutor<[boolean]>({
-      function: `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef::is_admin`,
+      function: `${this.resourceAccount}::chef::is_admin`,
       arguments: [HexString.ensure(address).toString()],
       type_arguments: [],
     });
@@ -343,7 +376,7 @@ export class TransactionBuilder {
      * @dev Build transaction
      */
     return this.getViewExecutor<[boolean]>({
-      function: `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef::is_allowed_target`,
+      function: `${this.resourceAccount}::chef::is_allowed_target`,
       arguments: [HexString.ensure(address).toString()],
       type_arguments: [],
     });
@@ -358,7 +391,7 @@ export class TransactionBuilder {
      * @dev Build transaction
      */
     return this.getViewExecutor<[boolean]>({
-      function: `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef::is_operator`,
+      function: `${this.resourceAccount}::chef::is_operator`,
       arguments: [HexString.ensure(address).toString()],
       type_arguments: [],
     });
@@ -373,7 +406,7 @@ export class TransactionBuilder {
      * @dev Build transaction
      */
     return this.getViewExecutor<[string]>({
-      function: `${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}::chef::get_delegated_vault_address`,
+      function: `${this.resourceAccount}::chef::get_delegated_vault_address`,
       arguments: [HexString.ensure(signer).toString()],
       type_arguments: [],
     });

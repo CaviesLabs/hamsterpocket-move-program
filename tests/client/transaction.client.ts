@@ -1,5 +1,7 @@
 import { AptosAccount, AptosClient, HexString } from "aptos";
 
+import { RESOURCE_ACCOUNT_SEED } from "./libs/constants";
+
 /**
  * @notice Transaction client to send transaction to aptos blockchain
  */
@@ -76,5 +78,15 @@ export class TransactionSigner {
    */
   public getClient() {
     return this.client;
+  }
+
+  /**
+   * @notice Get hamster pocket resource account
+   */
+  public getHamsterpocketResourceAccount() {
+    return AptosAccount.getResourceAccountAddress(
+      this.account.address().hex(),
+      new TextEncoder().encode(RESOURCE_ACCOUNT_SEED)
+    );
   }
 }

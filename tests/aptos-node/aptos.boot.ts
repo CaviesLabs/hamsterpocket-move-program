@@ -1,26 +1,25 @@
-import { ChildProcessWithoutNullStreams } from "child_process";
-
-import { UtilsProvider } from "./utils.provider";
+import { AptosAccount, AptosClient } from "aptos";
 
 export class AptosBootingManager {
-  private currentProcess: ChildProcessWithoutNullStreams | undefined;
   public static currentInstance: AptosBootingManager | undefined;
 
-  public static PRIVATE_KEY =
-    "0xeaa4eea8ac8048dfd7e3da319ad0834f9a10b171d2186318255f451b5baf6d90";
-  public static MAIN_ACCOUNT_ADDRESS =
-    "1e5320d3a1a12f28c22a52b62a3815cbf0efc49020089d350454f1d3fd53fd90";
-  public static RESOURCE_ACCOUNT_ADDRESS =
-    "93978b7674234c90003f608e7f33856c652edcaeb8280584ae44c61ea1b2539a";
-  public static APTOS_FAUCET_URL = "http://127.0.0.1:8081/";
-  public static APTOS_NODE_URL = "http://127.0.0.1:8080/";
+  public static APTOS_FAUCET_URL = "https://faucet.testnet.aptoslabs.com";
+  public static APTOS_NODE_URL = "https://fullnode.testnet.aptoslabs.com";
 
-  constructor(private readonly handler = require("node:child_process")) {}
+  public client: AptosClient | undefined;
+  public resourceAccountAddress = "";
+  private deployerAccount: AptosAccount | undefined;
+
+  constructor(readonly handler = require("node:child_process")) {
+    // initialize client first
+    this.client = new AptosClient(AptosBootingManager.APTOS_NODE_URL);
+  }
 
   /**
    * @notice Singleton to get current instance
    */
   public static getInstance(): AptosBootingManager {
+    // if available then return current instance
     if (this.currentInstance) {
       return this.currentInstance;
     }
@@ -30,52 +29,25 @@ export class AptosBootingManager {
   }
 
   /**
-   * @notice Start aptos node
+   * @notice get deployer account
    */
-  public async bootAptosNode() {
-    this.currentProcess = await this.handler.spawn("aptos", [
-      "node",
-      "run-local-testnet",
-      "--with-faucet",
-      "--assume-yes",
-      "--force-restart",
-    ]);
-
-    this.currentProcess?.stdout.on("data", (data) => {
-      console.log(`stdout: ${data}`);
-    });
-
-    this.currentProcess?.stderr.on("data", (data) => {
-      console.log(`stderr: ${data}`);
-    });
-
-    this.currentProcess?.on("error", (error) => {
-      console.log(`error: ${error.message}`);
-    });
-
-    this.currentProcess?.on("close", (code) => {
-      console.log(`child process exited with code ${code}`);
-    });
-
-    await new UtilsProvider().pause(20);
-  }
-
-  /**
-   * @notice Destroy aptos node after all test have been running
-   */
-  public async destroyAptosNode() {
-    if (this.currentProcess) {
-      console.log("exiting process");
-      this.currentProcess.kill("SIGTERM");
+  public getDeployerAccount() {
+    if (this.deployerAccount) {
+      return this.deployerAccount;
     }
 
-    await new UtilsProvider().pause(3);
+    this.deployerAccount = new AptosAccount();
+    return this.deployerAccount;
   }
 
   /**
    * @notice Prepare program to be ready for test
    */
-  public async prepareProgram() {
+  public async deployProgram(
+    deployerAccount: string,
+    resourceAccount: string,
+    privateKey: string
+  ) {
     /**
      * @dev Funding account
      */
@@ -84,26 +56,9 @@ export class AptosBootingManager {
         "aptos",
         "account",
         "fund-with-faucet",
-        `--account ${AptosBootingManager.MAIN_ACCOUNT_ADDRESS}`,
+        `--account ${resourceAccount}`,
         `--faucet-url ${AptosBootingManager.APTOS_FAUCET_URL}`,
         `--url ${AptosBootingManager.APTOS_NODE_URL}`,
-      ].join(" "),
-      { stdio: "inherit" }
-    );
-
-    /**
-     * @dev Create resource account
-     */
-    this.handler.execSync(
-      [
-        `aptos`,
-        `move`,
-        `run`,
-        `--assume-yes`,
-        `--function-id '0x1::resource_account::create_resource_account_and_fund'`,
-        `--args 'string:hamsterpocket' 'hex:${AptosBootingManager.MAIN_ACCOUNT_ADDRESS}' 'u64:10000000'`,
-        `--url ${AptosBootingManager.APTOS_NODE_URL}`,
-        `--private-key ${AptosBootingManager.PRIVATE_KEY}`,
       ].join(" "),
       { stdio: "inherit" }
     );
@@ -117,13 +72,18 @@ export class AptosBootingManager {
         "move",
         "publish",
         "--assume-yes",
-        `--private-key ${AptosBootingManager.PRIVATE_KEY}`,
-        `--sender-account ${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS}`,
-        `--named-addresses hamsterpocket=${AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS},deployer=${AptosBootingManager.MAIN_ACCOUNT_ADDRESS}`,
+        `--private-key ${privateKey}`,
+        `--sender-account ${resourceAccount}`,
+        `--named-addresses hamsterpocket=${resourceAccount},deployer=${deployerAccount}`,
         `--url ${AptosBootingManager.APTOS_NODE_URL}`,
       ].join(" "),
       { stdio: "inherit" }
     );
+
+    /**
+     * @dev Assign resource account
+     */
+    this.resourceAccountAddress = resourceAccount;
   }
 
   /**

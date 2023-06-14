@@ -1,5 +1,8 @@
 import { AptosClient } from "aptos";
+
 import { AptosBootingManager } from "../aptos-node/aptos.boot";
+
+const aptosNode = AptosBootingManager.getInstance();
 
 describe("deployment", function () {
   it("[deployment]: program should be deployed successfully", async () => {
@@ -7,7 +10,7 @@ describe("deployment", function () {
     const client = new AptosClient(AptosBootingManager.APTOS_NODE_URL);
 
     const resources = await client.getAccountResources(
-      AptosBootingManager.RESOURCE_ACCOUNT_ADDRESS
+      aptosNode.resourceAccountAddress
     );
     const accountResource = resources.find((r) => r.type === packageResource);
 

@@ -11,8 +11,9 @@ describe("administration", function () {
   let txBuilder: TransactionBuilder;
 
   beforeAll(async () => {
+    const account = aptosLocalNodeProcess.getDeployerAccount();
     signer = new TransactionSigner(
-      AptosBootingManager.PRIVATE_KEY,
+      account.toPrivateKeyObject().privateKeyHex,
       AptosBootingManager.APTOS_NODE_URL
     );
 
@@ -81,7 +82,7 @@ describe("administration", function () {
   it("[administration] should: non-admin will be rejected for administration activities", async () => {
     const nonAdminAccount = new AptosAccount();
     expect(nonAdminAccount.address().toShortString()).not.toEqual(
-      AptosBootingManager.MAIN_ACCOUNT_ADDRESS
+      aptosLocalNodeProcess.getDeployerAccount().address().hex()
     );
 
     // funding account
