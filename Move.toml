@@ -10,5 +10,5 @@ AptosToken = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "a
 PancakeSwap = { git = "https://github.com/pancakeswap/pancake-contracts-move.git", subdir = "pancake-swap/", rev = "c3432e5473606e414323572e06c0f032d2d3321c" }
 
 [addresses]
-hamsterpocket = "93978b7674234c90003f608e7f33856c652edcaeb8280584ae44c61ea1b2539a"
-deployer = "1e5320d3a1a12f28c22a52b62a3815cbf0efc49020089d350454f1d3fd53fd90"
+hamsterpocket = "_"
+deployer = "_"

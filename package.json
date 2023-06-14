@@ -12,7 +12,7 @@
   "scripts": {
     "test": "jest",
     "prepare": "husky install",
-    "lint": "aptos move compile && eslint . --ext .ts --fix",
+    "lint": "eslint . --ext .ts --fix",
     "prettier": "prettier --write 'tests/**/*.ts'",
     "lint:fix": "yarn run lint && yarn run prettier"
   },
