@@ -17,7 +17,10 @@ describe("administration", function () {
       AptosBootingManager.APTOS_NODE_URL
     );
 
-    txBuilder = new TransactionBuilder(signer);
+    txBuilder = new TransactionBuilder(
+      signer,
+      aptosLocalNodeProcess.resourceAccountAddress
+    );
   });
 
   it("[administration] should: initial states were made properly", async () => {
@@ -95,7 +98,10 @@ describe("administration", function () {
       nonAdminAccount.toPrivateKeyObject().privateKeyHex,
       AptosBootingManager.APTOS_NODE_URL
     );
-    const transactionBuilder = new TransactionBuilder(transactionSigner);
+    const transactionBuilder = new TransactionBuilder(
+      transactionSigner,
+      aptosLocalNodeProcess.resourceAccountAddress
+    );
 
     // try for admin
     try {

@@ -60,7 +60,10 @@ describe("vault", function () {
       aptosAccount.toPrivateKeyObject().privateKeyHex,
       AptosBootingManager.APTOS_NODE_URL
     );
-    txBuilder = new TransactionBuilder(signer);
+    txBuilder = new TransactionBuilder(
+      signer,
+      aptosNode.resourceAccountAddress
+    );
     coinClient = new CoinClient(signer.getClient());
 
     /**
@@ -70,7 +73,8 @@ describe("vault", function () {
       new TransactionSigner(
         aptosNode.getDeployerAccount().toPrivateKeyObject().privateKeyHex,
         AptosBootingManager.APTOS_NODE_URL
-      )
+      ),
+      aptosNode.resourceAccountAddress
     );
 
     /**

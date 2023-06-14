@@ -6,7 +6,6 @@ import {
   CreateResourceAccountParams,
   DepositParams,
   GetPocketParams,
-  GetResourceAccountParams,
   SetAllowedOperatorParams,
   SetInteractiveTargetParams,
   UpdatePocketParams,
@@ -33,7 +32,7 @@ interface Executor<T> {
 export class TransactionBuilder {
   constructor(
     private signer: TransactionSigner,
-    private resourceAccount?: string
+    private resourceAccount: string | null
   ) {}
 
   /**

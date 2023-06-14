@@ -26,7 +26,7 @@ describe("account]", function () {
 
     coinClient = new CoinClient(signer.getClient());
 
-    txBuilder = new TransactionBuilder(signer);
+    txBuilder = new TransactionBuilder(signer, null);
   });
 
   it("[account] should: resource account is known-able and creatable", async () => {

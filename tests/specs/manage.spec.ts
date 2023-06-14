@@ -60,7 +60,10 @@ describe("manage_pocket", function () {
       aptosAccount.toPrivateKeyObject().privateKeyHex,
       AptosBootingManager.APTOS_NODE_URL
     );
-    txBuilder = new TransactionBuilder(signer);
+    txBuilder = new TransactionBuilder(
+      signer,
+      aptosNode.resourceAccountAddress
+    );
 
     /**
      * @dev Build admin tx builder
@@ -69,7 +72,8 @@ describe("manage_pocket", function () {
       new TransactionSigner(
         aptosNode.getDeployerAccount().toPrivateKeyObject().privateKeyHex,
         AptosBootingManager.APTOS_NODE_URL
-      )
+      ),
+      aptosNode.resourceAccountAddress
     );
 
     /**
