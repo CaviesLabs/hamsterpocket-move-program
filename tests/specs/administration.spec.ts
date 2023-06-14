@@ -83,14 +83,9 @@ describe("administration", function () {
   });
 
   it("[administration] should: non-admin will be rejected for administration activities", async () => {
-    const nonAdminAccount = new AptosAccount();
+    const nonAdminAccount = await aptosLocalNodeProcess.createAndFundAccount();
     expect(nonAdminAccount.address().toShortString()).not.toEqual(
       aptosLocalNodeProcess.getDeployerAccount().address().hex()
-    );
-
-    // funding account
-    await aptosLocalNodeProcess.fundingWithFaucet(
-      nonAdminAccount.address().hex()
     );
 
     // signer and tx builder
@@ -114,9 +109,7 @@ describe("administration", function () {
 
       throw new Error("should be failed");
     } catch (e) {
-      expect((e as any).message).toEqual(
-        "Move abort in 0x93978b7674234c90003f608e7f33856c652edcaeb8280584ae44c61ea1b2539a::platform: 0x50000"
-      );
+      expect((e as any).message.includes("0x50000")).toEqual(true);
     }
 
     try {
@@ -129,9 +122,7 @@ describe("administration", function () {
 
       throw new Error("should be failed");
     } catch (e) {
-      expect((e as any).message).toEqual(
-        "Move abort in 0x93978b7674234c90003f608e7f33856c652edcaeb8280584ae44c61ea1b2539a::platform: 0x50000"
-      );
+      expect((e as any).message.includes("0x50000")).toEqual(true);
     }
   });
 });

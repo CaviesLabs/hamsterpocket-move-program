@@ -1,4 +1,4 @@
-import { AptosAccount, AptosClient } from "aptos";
+import { AptosAccount, AptosClient, CoinClient, HexString } from "aptos";
 
 export class AptosBootingManager {
   public static currentInstance: AptosBootingManager | undefined;
@@ -6,9 +6,11 @@ export class AptosBootingManager {
   public static APTOS_FAUCET_URL = "https://faucet.testnet.aptoslabs.com";
   public static APTOS_NODE_URL = "https://fullnode.testnet.aptoslabs.com";
 
-  public client: AptosClient | undefined;
+  public readonly client: AptosClient;
   public resourceAccountAddress = "";
   private deployerAccount: AptosAccount | undefined;
+
+  private managedAccounts: AptosAccount[] = [];
 
   constructor(readonly handler = require("node:child_process")) {
     // initialize client first
@@ -37,6 +39,8 @@ export class AptosBootingManager {
     }
 
     this.deployerAccount = new AptosAccount();
+    this.managedAccounts.push(this.deployerAccount);
+
     return this.deployerAccount;
   }
 
@@ -103,6 +107,39 @@ export class AptosBootingManager {
         ].join(" "),
         { stdio: "inherit" }
       )
+    );
+  }
+
+  /**
+   * @notice Create and fund account
+   */
+  public async createAndFundAccount() {
+    const account = new AptosAccount();
+
+    // push to account registry
+    this.managedAccounts.push(account);
+
+    // funding account
+    await this.fundingWithFaucet(account.address().hex());
+
+    return account;
+  }
+
+  /**
+   * @dev Collect all fees
+   * @param target
+   */
+  public async collectAllFaucet(target: HexString) {
+    await Promise.all(
+      this.managedAccounts.map(async (account) => {
+        const coinClient = new CoinClient(this.client);
+
+        return coinClient.transfer(
+          account,
+          target,
+          (await coinClient.checkBalance(account)) - BigInt(1e7)
+        );
+      })
     );
   }
 }

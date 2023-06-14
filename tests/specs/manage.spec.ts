@@ -1,5 +1,3 @@
-import { AptosAccount } from "aptos";
-
 import { TransactionSigner } from "../client/transaction.client";
 import { TransactionBuilder } from "../client/transaction.builder";
 import { AptosBootingManager } from "../aptos-node/aptos.boot";
@@ -44,14 +42,7 @@ describe("manage_pocket", function () {
     /**
      * @dev create new account
      */
-    const aptosAccount = new AptosAccount();
-
-    /**
-     * @dev funding account
-     */
-    await AptosBootingManager.getInstance().fundingWithFaucet(
-      aptosAccount.address().hex()
-    );
+    const aptosAccount = await aptosNode.createAndFundAccount();
 
     /**
      * @dev build signer and tx builder

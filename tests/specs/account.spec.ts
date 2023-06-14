@@ -13,10 +13,7 @@ describe("account]", function () {
   let account: AptosAccount;
 
   beforeAll(async () => {
-    account = new AptosAccount();
-
-    // funding faucet
-    await aptosNode.fundingWithFaucet(account.address().hex());
+    account = await aptosNode.createAndFundAccount();
 
     // build up transaction signer and tx builder
     signer = new TransactionSigner(

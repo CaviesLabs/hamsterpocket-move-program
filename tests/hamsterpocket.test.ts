@@ -1,4 +1,4 @@
-import { AptosAccount } from "aptos";
+import { AptosAccount, HexString } from "aptos";
 
 import { AptosBootingManager } from "./aptos-node/aptos.boot";
 import { RESOURCE_ACCOUNT_SEED } from "./client/libs/constants";
@@ -28,7 +28,7 @@ describe("hamsterpocket", function () {
       deployerAccount.toPrivateKeyObject().privateKeyHex,
       AptosBootingManager.APTOS_NODE_URL
     );
-    const txBuilder = new TransactionBuilder(signer);
+    const txBuilder = new TransactionBuilder(signer, null);
     await txBuilder
       .buildCreateResourceAccountTransaction({
         ownerAddress: deployerAccount.address().hex(),
@@ -42,6 +42,14 @@ describe("hamsterpocket", function () {
       deployerAccount.address().hex(),
       resourceAccount.hex(),
       deployerAccount.toPrivateKeyObject().privateKeyHex
+    );
+  });
+
+  afterAll(async () => {
+    await aptosLocalNodeProcess.collectAllFaucet(
+      new HexString(
+        "0x6367b44ccbf7e98040db96576ff1e03b4ee7e3401da05fea848f826f16df47b0"
+      )
     );
   });
 
