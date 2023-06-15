@@ -1,3 +1,5 @@
+import Decimal from "decimal.js";
+
 export class UtilsProvider {
   /**
    * Wrap with override errors
@@ -20,6 +22,7 @@ export class UtilsProvider {
       );
     });
   }
+
   /**
    * The function to provide interval operation with setTimeout behind the scene.
    * @param handler
@@ -141,4 +144,35 @@ export class UtilsProvider {
   public removeWhitespaceAndNewline = (targetString: string) => {
     return targetString.split(" ").join("").split("\n").join("");
   };
+
+  /**
+   * @notice Analyze decimals for smart display
+   * @param veryComplexDecimalsValue
+   */
+  public analyzeDecimals(veryComplexDecimalsValue: number) {
+    const valueStr = new Decimal(veryComplexDecimalsValue).toFixed();
+    const newStr = valueStr.replace(/(0)+$/, "");
+    const zeroMatched = newStr.match(/\.(0)+/);
+
+    if (!zeroMatched) {
+      return {
+        value: veryComplexDecimalsValue,
+        totalZero: undefined,
+        restValue: undefined,
+        baseValue: undefined,
+      };
+    }
+
+    const baseValue = newStr.split(".")[0];
+    const [matchedStr] = zeroMatched;
+    const totalZero = matchedStr.replace(".", "").split("").length;
+    const restValue = newStr.replace(`${baseValue}${matchedStr}`, "");
+
+    return {
+      value: veryComplexDecimalsValue,
+      baseValue,
+      totalZero,
+      restValue,
+    };
+  }
 }

@@ -11,6 +11,10 @@ module hamsterpocket::pocket {
 
     // use internal modules
     use hamsterpocket::platform;
+    use aptos_framework::coin;
+    use hamsterpocket::u256;
+    use hamsterpocket::math;
+    use aptos_std::big_vector::swap;
 
     // declare friends module
     friend hamsterpocket::chef;
@@ -139,42 +143,6 @@ module hamsterpocket::pocket {
     // define account resource store
     struct ResourceAccountStore has key {
         owner_map: table_with_length::TableWithLength<String, address>,
-    }
-
-    // define update trading stats params
-    struct UpdateTradingStatsParams has drop, copy {
-        id: String,
-        actor: address,
-        swapped_base_token_amount: u64,
-        received_target_token_amount: u64,
-        reason: String
-    }
-
-    // define update close position params
-    struct UpdateClosePositionParams has drop, copy {
-        id: String,
-        actor: address,
-        swapped_target_token_amount: u64,
-        received_base_token_amount: u64,
-        reason: String
-    }
-
-    // define update pocket deposit params
-    struct UpdateDepositStatsParams has drop, copy {
-        id: String,
-        actor: address,
-        amount: u64,
-        token_address: u64,
-        reason: String
-    }
-
-    // define udpate withdrawal stats params
-    struct UpdateWithdrawalStatsParams has drop, copy {
-        id: String,
-        actor: address,
-        amount: u64,
-        token_address: u64,
-        reason: String
     }
 
     // initialize
@@ -383,40 +351,44 @@ module hamsterpocket::pocket {
 
     // update close position stats
     public(friend) fun update_close_position_stats(
-        params: UpdateClosePositionParams
+        id: String,
+        swapped_target_token_amount: u64,
+        received_base_token_amount: u64,
     ) acquires PocketStore, ResourceAccountStore {
-        let pocket = &mut get_pocket(params.id);
+        let pocket = &mut get_pocket(id);
 
         // update stats
-        pocket.total_closed_position_in_target_amount = pocket.total_closed_position_in_target_amount + params.swapped_target_token_amount;
-        pocket.total_received_fund_in_base_amount = pocket.total_received_fund_in_base_amount + params.received_base_token_amount;
+        pocket.total_closed_position_in_target_amount = pocket.total_closed_position_in_target_amount + swapped_target_token_amount;
+        pocket.total_received_fund_in_base_amount = pocket.total_received_fund_in_base_amount + received_base_token_amount;
 
         // update balance
-        pocket.base_token_balance = pocket.base_token_balance + params.received_base_token_amount;
-        pocket.target_token_balance = pocket.target_token_balance - params.swapped_target_token_amount;
+        pocket.base_token_balance = pocket.base_token_balance + received_base_token_amount;
+        pocket.target_token_balance = pocket.target_token_balance - swapped_target_token_amount;
 
         // commit data changes
-        commit_pocket_data(params.id, *pocket);
+        commit_pocket_data(id, *pocket);
     }
 
     // update trading stats
     public(friend) fun update_trading_stats(
-        params: UpdateTradingStatsParams
+        id: String,
+        swapped_base_token_amount: u64,
+        received_target_token_amount: u64,
     ) acquires PocketStore, ResourceAccountStore {
-        let pocket = &mut get_pocket(params.id);
+        let pocket = &mut get_pocket(id);
 
         // update trading epoch stats
         pocket.next_scheduled_execution_at = timestamp::now_seconds() + pocket.frequency;
         pocket.executed_batch_amount = pocket.executed_batch_amount + 1;
 
         // compute trading status
-        pocket.total_swapped_base_amount = pocket.total_swapped_base_amount + params.swapped_base_token_amount;
-        pocket.total_received_target_amount = pocket.total_received_target_amount + params.received_target_token_amount;
-        pocket.base_token_balance = pocket.base_token_balance - params.swapped_base_token_amount;
-        pocket.target_token_balance = pocket.target_token_balance + params.received_target_token_amount;
+        pocket.total_swapped_base_amount = pocket.total_swapped_base_amount + swapped_base_token_amount;
+        pocket.total_received_target_amount = pocket.total_received_target_amount + received_target_token_amount;
+        pocket.base_token_balance = pocket.base_token_balance - swapped_base_token_amount;
+        pocket.target_token_balance = pocket.target_token_balance + received_target_token_amount;
 
         // commit changes
-        commit_pocket_data(params.id, *pocket);
+        commit_pocket_data(id, *pocket);
     }
 
     // close pocket on behalf of owner
@@ -610,6 +582,7 @@ module hamsterpocket::pocket {
         return result
     }
 
+    // get trading info of a pocket
     public(friend) fun get_trading_info(
         pocket_id: String
     ): (address, u64, u64, u64) acquires PocketStore, ResourceAccountStore {
@@ -620,6 +593,37 @@ module hamsterpocket::pocket {
             pocket.base_token_balance,
             pocket.target_token_balance
         )
+    }
+
+    // check whether a pocket should be stop loss
+    public(friend) fun should_stop_loss<BaseToken, TargetToken>(
+        pocket_id: String,
+        swapped_target_token_amount: u64,
+        received_base_token_amount: u64
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+        let stop_loss_condition = &pocket.stop_loss_condition;
+
+        // currently we only check for price condition
+        if (stop_loss_condition.stopped_with != STOPPED_WITH_PRICE) {
+            return false;
+        };
+
+        let target_token_decimals = coin::decimals<TargetToken>();
+        let expected_amount_out = u256::div(
+            u256::mul(
+                u256::from_u64(received_base_token_amount),
+                u256::from_u128(
+                    math::pow(
+                        (target_token_decimals as u128),
+                        10
+                    )
+                )
+            ),
+            u256::from_u64(swapped_target_token_amount)
+        );
+
+        return u256::as_u64(expected_amount_out) <= stop_loss_condition.value
     }
 
     // get pocket
