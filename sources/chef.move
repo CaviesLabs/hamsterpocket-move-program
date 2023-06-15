@@ -211,7 +211,7 @@ module hamsterpocket::chef {
         let type_info_y = type_info::type_of<TargetToken>();
         let computed_target_token_address = type_info::account_address(&type_info_y);
 
-        // make sure the pocket is able to deposit
+        // make sure the pocket is able to withdraw
         pocket::is_able_to_withdraw(signer, pocket_id, true);
 
         // extract trading info
@@ -235,7 +235,7 @@ module hamsterpocket::chef {
             error::invalid_state(INVALID_TOKEN_TYPE)
         );
 
-        // deposit from vault
+        // withdraw from vault
         vault::withdraw<BaseToken>(
             signer,
             base_token_balance
