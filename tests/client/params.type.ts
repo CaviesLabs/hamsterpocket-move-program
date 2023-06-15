@@ -25,15 +25,10 @@ export interface CreatePocketParams {
   startAt: bigint;
   frequency: bigint;
   batchVolume: bigint;
-  openPositionConditionOperator: OpenPositionOperator;
-  openPositionConditionValueX: bigint;
-  openPositionConditionValueY: bigint;
-  stopLossConditionStoppedWith: StopConditionStoppedWith;
-  stopLossConditionStoppedValue: bigint;
-  takeProfitConditionStoppedWith: StopConditionStoppedWith;
-  takeProfitConditionStoppedValue: bigint;
-  autoCloseConditionClosedWith: AutoCloseConditionClosedWith;
-  autoCloseConditionValue: bigint;
+  openPositionCondition: [OpenPositionOperator, bigint, bigint];
+  stopLossCondition: [StopConditionStoppedWith, bigint];
+  takeProfitCondition: [StopConditionStoppedWith, bigint];
+  autoClosedConditions: [AutoCloseConditionClosedWith, bigint][];
 }
 
 export interface UpdatePocketParams {
@@ -41,15 +36,10 @@ export interface UpdatePocketParams {
   startAt: bigint;
   frequency: bigint;
   batchVolume: bigint;
-  openPositionConditionOperator: OpenPositionOperator;
-  openPositionConditionValueX: bigint;
-  openPositionConditionValueY: bigint;
-  stopLossConditionStoppedWith: StopConditionStoppedWith;
-  stopLossConditionStoppedValue: bigint;
-  takeProfitConditionStoppedWith: StopConditionStoppedWith;
-  takeProfitConditionStoppedValue: bigint;
-  autoCloseConditionClosedWith: AutoCloseConditionClosedWith;
-  autoCloseConditionValue: bigint;
+  openPositionCondition: [OpenPositionOperator, bigint, bigint];
+  stopLossCondition: [StopConditionStoppedWith, bigint];
+  takeProfitCondition: [StopConditionStoppedWith, bigint];
+  autoClosedConditions: [AutoCloseConditionClosedWith, bigint][];
 }
 
 export interface GetPocketParams {

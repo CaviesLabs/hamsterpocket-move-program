@@ -31,11 +31,10 @@ export enum StopConditionStoppedWith {
 }
 
 export enum AutoCloseConditionClosedWith {
-  UNSET = 0x0,
-  CLOSED_WITH_END_TIME = 0x1,
-  CLOSED_WITH_BATCH_AMOUNT = 0x2,
-  CLOSED_WITH_SPENT_BASE_AMOUNT = 0x3,
-  CLOSED_WITH_RECEIVED_TARGET_AMOUNT = 0x4,
+  CLOSED_WITH_END_TIME = 0x0,
+  CLOSED_WITH_BATCH_AMOUNT = 0x1,
+  CLOSED_WITH_SPENT_BASE_AMOUNT = 0x2,
+  CLOSED_WITH_RECEIVED_TARGET_AMOUNT = 0x3,
 }
 
 export interface PocketEntity {
@@ -47,10 +46,10 @@ export interface PocketEntity {
   target_token_balance: bigint;
   amm: AMM;
   status: PocketStatus;
-  auto_close_condition: {
+  auto_close_conditions: {
     closed_with: AutoCloseConditionClosedWith;
     value: bigint;
-  };
+  }[];
   batch_volume: bigint;
   executed_batch_amount: bigint;
   frequency: bigint;
@@ -100,12 +99,12 @@ export const transformPocketEntity = (
       value_x: BigInt(entity.open_position_condition.value_x),
       value_y: BigInt(entity.open_position_condition.value_y),
     },
-    auto_close_condition: {
+    auto_close_conditions: entity.auto_close_conditions.map((condition) => ({
       closed_with: parseInt(
-        entity.auto_close_condition.closed_with
+        condition.closed_with
       ) as AutoCloseConditionClosedWith,
-      value: BigInt(entity.auto_close_condition.value),
-    },
+      value: BigInt(condition.value),
+    })),
     stop_loss_condition: {
       stopped_with: parseInt(
         entity.stop_loss_condition.stopped_with

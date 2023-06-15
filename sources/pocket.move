@@ -3,6 +3,7 @@
 */
 module hamsterpocket::pocket {
     use aptos_std::table_with_length;
+    use aptos_std::math128 as math;
     use aptos_framework::timestamp;
     use std::signer;
     use std::signer::address_of;
@@ -13,7 +14,8 @@ module hamsterpocket::pocket {
     use hamsterpocket::platform;
     use aptos_framework::coin;
     use hamsterpocket::u256;
-    use hamsterpocket::math;
+    use std::vector;
+    use std::vector::for_each;
 
     // declare friends module
     friend hamsterpocket::chef;
@@ -48,10 +50,10 @@ module hamsterpocket::pocket {
     const STOPPED_WITH_PORTFOLIO_PERCENT_DIFF: u64 = 0x3;
 
     // define conditional auto close pocket
-    const CLOSED_WITH_END_TIME: u64 = 0x1;
-    const CLOSED_WITH_BATCH_AMOUNT: u64 = 0x2;
-    const CLOSED_WITH_SPENT_BASE_AMOUNT: u64 = 0x3;
-    const CLOSED_WITH_RECEIVED_TARGET_AMOUNT: u64 = 0x4;
+    const CLOSED_WITH_END_TIME: u64 = 0x0;
+    const CLOSED_WITH_BATCH_AMOUNT: u64 = 0x1;
+    const CLOSED_WITH_SPENT_BASE_AMOUNT: u64 = 0x2;
+    const CLOSED_WITH_RECEIVED_TARGET_AMOUNT: u64 = 0x3;
 
     // define input errors
     const INVALID_TIMESTAMP: u64 = 0x1;
@@ -117,7 +119,7 @@ module hamsterpocket::pocket {
         open_position_condition: ValueComparision,
         stop_loss_condition: TradingStopCondition,
         take_profit_condition: TradingStopCondition,
-        auto_close_condition: AutoCloseCondition,
+        auto_close_conditions: vector<AutoCloseCondition>,
 
         // statistic fields are not inserted during pocket creation, but pocket operation
         total_deposited_base_amount: u64,
@@ -166,16 +168,13 @@ module hamsterpocket::pocket {
         start_at: u64,
         frequency: u64,
         batch_volume: u64,
-        open_position_condition_operator: u64,
-        open_position_condition_value_x: u64,
-        open_position_condition_value_y: u64,
-        stop_loss_condition_stopped_with: u64,
-        stop_loss_condition_value: u64,
-        take_profit_condition_stopped_with: u64,
-        take_profit_condition_value: u64,
-        auto_close_condition_closed_with: u64,
-        auto_close_condition_value: u64
+        open_position_condition: vector<u64>,
+        take_profit_condition: vector<u64>,
+        stop_loss_condition: vector<u64>,
+        auto_close_conditions: vector<u64>
     ) acquires PocketStore, ResourceAccountStore {
+        let close_conditions = create_close_conditions(&auto_close_conditions);
+
         let pocket = &mut Pocket {
             id,
             owner: address_of(signer),
@@ -187,22 +186,19 @@ module hamsterpocket::pocket {
             frequency, // second
             batch_volume,
             open_position_condition: ValueComparision {
-                operator: open_position_condition_operator,
-                value_x: open_position_condition_value_x,
-                value_y: open_position_condition_value_y
+                operator: *vector::borrow(&open_position_condition, 0),
+                value_x: *vector::borrow(&open_position_condition, 1),
+                value_y: *vector::borrow(&open_position_condition, 2)
             },
             stop_loss_condition: TradingStopCondition {
-                stopped_with: stop_loss_condition_stopped_with,
-                value: stop_loss_condition_value
+                stopped_with: *vector::borrow(&stop_loss_condition, 0),
+                value: *vector::borrow(&stop_loss_condition, 1)
             },
             take_profit_condition: TradingStopCondition {
-                stopped_with: take_profit_condition_stopped_with,
-                value: take_profit_condition_value
+                stopped_with: *vector::borrow(&take_profit_condition, 0),
+                value: *vector::borrow(&take_profit_condition, 1)
             },
-            auto_close_condition: AutoCloseCondition {
-                closed_with: auto_close_condition_closed_with,
-                value: auto_close_condition_value
-            },
+            auto_close_conditions: close_conditions,
             // statistic fields won't validate at initialization
             status: STATUS_ACTIVE,
             total_deposited_base_amount: 0,
@@ -268,15 +264,10 @@ module hamsterpocket::pocket {
         start_at: u64,
         frequency: u64,
         batch_volume: u64,
-        open_position_condition_operator: u64,
-        open_position_condition_value_x: u64,
-        open_position_condition_value_y: u64,
-        stop_loss_condition_stopped_with: u64,
-        stop_loss_condition_value: u64,
-        take_profit_condition_stopped_with: u64,
-        take_profit_condition_value: u64,
-        auto_close_condition_closed_with: u64,
-        auto_close_condition_value: u64
+        open_position_condition: vector<u64>,
+        take_profit_condition: vector<u64>,
+        stop_loss_condition: vector<u64>,
+        auto_close_conditions: vector<u64>
     ) acquires PocketStore, ResourceAccountStore {
         // now we extract pocket
         let pocket = &mut get_pocket(id);
@@ -288,22 +279,19 @@ module hamsterpocket::pocket {
         pocket.frequency = frequency;
         pocket.batch_volume = batch_volume;
         pocket.open_position_condition = ValueComparision {
-            operator: open_position_condition_operator,
-            value_x: open_position_condition_value_x,
-            value_y: open_position_condition_value_y
+            operator: *vector::borrow(&open_position_condition, 0),
+            value_x: *vector::borrow(&open_position_condition, 1),
+            value_y: *vector::borrow(&open_position_condition, 2)
         };
         pocket.stop_loss_condition = TradingStopCondition {
-            stopped_with: stop_loss_condition_stopped_with,
-            value: stop_loss_condition_value
+            stopped_with: *vector::borrow(&stop_loss_condition, 0),
+            value: *vector::borrow(&stop_loss_condition, 1)
         };
         pocket.take_profit_condition = TradingStopCondition {
-            stopped_with: take_profit_condition_stopped_with,
-            value: take_profit_condition_value
+            stopped_with: *vector::borrow(&take_profit_condition, 0),
+            value: *vector::borrow(&take_profit_condition, 1)
         };
-        pocket.auto_close_condition = AutoCloseCondition {
-            closed_with: auto_close_condition_closed_with,
-            value: auto_close_condition_value
-        };
+        pocket.auto_close_conditions = create_close_conditions(&auto_close_conditions);
 
         // compute other state
         if (pocket.next_scheduled_execution_at == pocket.start_at) {
@@ -594,6 +582,60 @@ module hamsterpocket::pocket {
         )
     }
 
+    // check whether the pocket should open position
+    public(friend) fun should_open_position(
+        pocket_id: String,
+        swapped_base_token_amount: u64,
+        received_target_token_amount: u64
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+        let condition = &pocket.open_position_condition;
+
+        let expected_amount_out = u256::div(
+            u256::mul(
+                u256::from_u64(received_target_token_amount),
+                u256::from_u64(pocket.batch_volume)
+            ),
+            u256::from_u64(swapped_base_token_amount)
+        );
+
+        if (condition.operator == OPERATOR_LT) {
+            return u256::as_u64(expected_amount_out) < condition.value_x
+        };
+
+        if (condition.operator == OPERATOR_LTE) {
+            return u256::as_u64(expected_amount_out) <= condition.value_x
+        };
+
+        if (condition.operator == OPERATOR_EQ) {
+            return u256::as_u64(expected_amount_out) == condition.value_x
+        };
+
+        if (condition.operator == OPERATOR_NEQ) {
+            return u256::as_u64(expected_amount_out) != condition.value_x
+        };
+
+        if (condition.operator == OPERATOR_GT) {
+            return u256::as_u64(expected_amount_out) > condition.value_x
+        };
+
+        if (condition.operator == OPERATOR_GTE) {
+            return u256::as_u64(expected_amount_out) >= condition.value_x
+        };
+
+        if (condition.operator == OPERATOR_BW) {
+            return u256::as_u64(expected_amount_out) >= condition.value_x &&
+                u256::as_u64(expected_amount_out) <= condition.value_y
+        };
+
+        if (condition.operator == OPERATOR_NBW) {
+            return u256::as_u64(expected_amount_out) <= condition.value_x ||
+                u256::as_u64(expected_amount_out) >= condition.value_y
+        };
+
+        return true
+    }
+
     // check whether a pocket should be stop loss
     public(friend) fun should_stop_loss<BaseToken, TargetToken>(
         pocket_id: String,
@@ -614,8 +656,8 @@ module hamsterpocket::pocket {
                 u256::from_u64(received_base_token_amount),
                 u256::from_u128(
                     math::pow(
-                        (target_token_decimals as u128),
-                        10
+                        10,
+                        (target_token_decimals as u128)
                     )
                 )
             ),
@@ -623,6 +665,37 @@ module hamsterpocket::pocket {
         );
 
         return u256::as_u64(expected_amount_out) <= stop_loss_condition.value
+    }
+
+    // check whether a pocket should take profit
+    public(friend) fun should_take_profit<BaseToken, TargetToken>(
+        pocket_id: String,
+        swapped_target_token_amount: u64,
+        received_base_token_amount: u64
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+        let condition = &pocket.take_profit_condition;
+
+        // currently we only check for price condition
+        if (condition.stopped_with != STOPPED_WITH_PRICE) {
+            return false
+        };
+
+        let target_token_decimals = coin::decimals<TargetToken>();
+        let expected_amount_out = u256::div(
+            u256::mul(
+                u256::from_u64(received_base_token_amount),
+                u256::from_u128(
+                    math::pow(
+                        10,
+                        (target_token_decimals as u128)
+                    )
+                )
+            ),
+            u256::from_u64(swapped_target_token_amount)
+        );
+
+        return u256::as_u64(expected_amount_out) >= condition.value
     }
 
     // get pocket
@@ -656,6 +729,40 @@ module hamsterpocket::pocket {
 
         // return pocket
         return *pocket
+    }
+
+
+    // create close conditions based on u64 vector
+    fun create_close_conditions(conditions: &vector<u64>): vector<AutoCloseCondition> {
+        assert!(
+            vector::length<u64>(conditions) % 2 == 0,
+            error::invalid_argument(INVALID_VALUE)
+        );
+        let close_conditions = vector::empty<AutoCloseCondition>();
+
+        let index = 0;
+        while (index < vector::length(conditions)) {
+            // build up condition
+            let condition = AutoCloseCondition {
+                closed_with: *vector::borrow(conditions, index),
+                value: *vector::borrow(conditions, index + 1)
+            };
+
+            // validate condition here
+            validate_auto_close_condition(&condition);
+
+            vector::push_back(
+                &mut close_conditions,
+                AutoCloseCondition {
+                    closed_with: *vector::borrow(conditions, index),
+                    value: *vector::borrow(conditions, index + 1)
+                }
+            );
+
+            index = index + 2;
+        };
+
+        return close_conditions
     }
 
     // get pocket mut
@@ -717,7 +824,7 @@ module hamsterpocket::pocket {
         validate_open_position_condition(&pocket.open_position_condition);
         validate_trading_stop_condition(&pocket.stop_loss_condition);
         validate_trading_stop_condition(&pocket.take_profit_condition);
-        validate_auto_close_condition(&pocket.auto_close_condition);
+        for_each((copy pocket).auto_close_conditions, |condition| validate_auto_close_condition(&condition));
     }
 
     // check whether the pocket is able to deposit
@@ -755,10 +862,9 @@ module hamsterpocket::pocket {
     // check whether the open position condition is valid
     fun validate_auto_close_condition(condition: &AutoCloseCondition) {
         // valid operator must be less than 0x4
-        assert!(condition.closed_with <= 0x4, error::invalid_state(INVALID_VALUE));
+        assert!(condition.closed_with <= 0x3, error::invalid_state(INVALID_VALUE));
 
         // validate
-        if (condition.closed_with == UNSET) return;
         assert!(condition.value > 0, error::invalid_state(ZERO_VALUE));
     }
 }

@@ -1,9 +1,9 @@
 export interface PocketResponseType {
   amm: string;
-  auto_close_condition: {
+  auto_close_conditions: {
     closed_with: string;
     value: string;
-  };
+  }[];
   base_token_address: string;
   base_token_balance: string;
   batch_volume: string;
@@ -35,5 +35,3 @@ export interface PocketResponseType {
   total_received_target_amount: string;
   total_swapped_base_amount: string;
 }
-
-export type BooleanResponseType = boolean;

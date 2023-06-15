@@ -223,15 +223,30 @@ export class TransactionBuilder {
             BCS.bcsSerializeU64(params.startAt),
             BCS.bcsSerializeU64(params.frequency),
             BCS.bcsSerializeU64(params.batchVolume),
-            BCS.bcsSerializeU64(BigInt(params.openPositionConditionOperator)),
-            BCS.bcsSerializeU64(params.openPositionConditionValueX),
-            BCS.bcsSerializeU64(params.openPositionConditionValueY),
-            BCS.bcsSerializeU64(BigInt(params.stopLossConditionStoppedWith)),
-            BCS.bcsSerializeU64(params.stopLossConditionStoppedValue),
-            BCS.bcsSerializeU64(BigInt(params.takeProfitConditionStoppedWith)),
-            BCS.bcsSerializeU64(params.takeProfitConditionStoppedValue),
-            BCS.bcsSerializeU64(BigInt(params.autoCloseConditionClosedWith)),
-            BCS.bcsSerializeU64(params.autoCloseConditionValue),
+            BCS.serializeVectorWithFunc(
+              [
+                params.openPositionCondition[0],
+                params.openPositionCondition[1],
+                params.openPositionCondition[2],
+              ],
+              "serializeU64"
+            ),
+            BCS.serializeVectorWithFunc(
+              [params.takeProfitCondition[0], params.takeProfitCondition[1]],
+              "serializeU64"
+            ),
+
+            BCS.serializeVectorWithFunc(
+              [params.stopLossCondition[0], params.stopLossCondition[1]],
+              "serializeU64"
+            ),
+            BCS.serializeVectorWithFunc(
+              params.autoClosedConditions.reduce<bigint[]>(
+                (accum, condition) => accum.concat(condition as bigint[]),
+                []
+              ),
+              "serializeU64"
+            ),
           ]
         )
       )
@@ -257,15 +272,30 @@ export class TransactionBuilder {
             BCS.bcsSerializeU64(params.startAt),
             BCS.bcsSerializeU64(params.frequency),
             BCS.bcsSerializeU64(params.batchVolume),
-            BCS.bcsSerializeU64(BigInt(params.openPositionConditionOperator)),
-            BCS.bcsSerializeU64(params.openPositionConditionValueX),
-            BCS.bcsSerializeU64(params.openPositionConditionValueY),
-            BCS.bcsSerializeU64(BigInt(params.stopLossConditionStoppedWith)),
-            BCS.bcsSerializeU64(params.stopLossConditionStoppedValue),
-            BCS.bcsSerializeU64(BigInt(params.takeProfitConditionStoppedWith)),
-            BCS.bcsSerializeU64(params.takeProfitConditionStoppedValue),
-            BCS.bcsSerializeU64(BigInt(params.autoCloseConditionClosedWith)),
-            BCS.bcsSerializeU64(params.autoCloseConditionValue),
+            BCS.serializeVectorWithFunc(
+              [
+                params.openPositionCondition[0],
+                params.openPositionCondition[1],
+                params.openPositionCondition[2],
+              ],
+              "serializeU64"
+            ),
+            BCS.serializeVectorWithFunc(
+              [params.takeProfitCondition[0], params.takeProfitCondition[1]],
+              "serializeU64"
+            ),
+
+            BCS.serializeVectorWithFunc(
+              [params.stopLossCondition[0], params.stopLossCondition[1]],
+              "serializeU64"
+            ),
+            BCS.serializeVectorWithFunc(
+              params.autoClosedConditions.reduce<bigint[]>(
+                (accum, condition) => accum.concat(condition as bigint[]),
+                []
+              ),
+              "serializeU64"
+            ),
           ]
         )
       )

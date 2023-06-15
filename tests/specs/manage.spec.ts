@@ -34,8 +34,9 @@ describe("manage_pocket", function () {
     stopLossConditionStoppedWith: StopConditionStoppedWith.UNSET,
     takeProfitConditionStoppedValue: BigInt(0),
     takeProfitConditionStoppedWith: StopConditionStoppedWith.UNSET,
-    autoCloseConditionValue: BigInt(0),
-    autoCloseConditionClosedWith: AutoCloseConditionClosedWith.UNSET,
+    autoClosedConditions: [
+      [AutoCloseConditionClosedWith.CLOSED_WITH_END_TIME, BigInt(13)],
+    ],
   };
 
   beforeAll(async () => {
@@ -87,6 +88,7 @@ describe("manage_pocket", function () {
     const [pocketResponse] = await txBuilder
       .buildGetPocket({ id: pocketData.id })
       .execute();
+
     const transformedPocket = transformPocketEntity(pocketResponse);
 
     // expect
@@ -108,6 +110,13 @@ describe("manage_pocket", function () {
     expect(transformedPocket.open_position_condition.value_x).toEqual(
       BigInt(0)
     );
+    expect(transformedPocket.auto_close_conditions.length).toEqual(1);
+    expect(transformedPocket.auto_close_conditions[0].closed_with).toEqual(
+      AutoCloseConditionClosedWith.CLOSED_WITH_END_TIME
+    );
+    expect(transformedPocket.auto_close_conditions[0].value).toEqual(
+      BigInt(13)
+    );
   });
 
   it("[manage_pocket] should: update pocket successfully", async () => {
@@ -118,6 +127,7 @@ describe("manage_pocket", function () {
         openPositionConditionOperator: OpenPositionOperator.OPERATOR_GTE,
         openPositionConditionValueX: BigInt(1),
         openPositionConditionValueY: BigInt(10),
+        autoClosedConditions: [],
       })
       .execute();
 
@@ -138,6 +148,7 @@ describe("manage_pocket", function () {
     expect(transformedPocket.open_position_condition.value_y).toEqual(
       BigInt(10)
     );
+    expect(transformedPocket.auto_close_conditions.length).toEqual(0);
   });
 
   it("[manage_pocket] should: can pause pocket", async () => {

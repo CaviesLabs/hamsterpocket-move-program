@@ -59,16 +59,11 @@ module hamsterpocket::chef {
         start_at: u64,
         frequency: u64,
         batch_volume: u64,
-        open_position_condition_operator: u64,
-        open_position_condition_value_x: u64,
-        open_position_condition_value_y: u64,
-        stop_loss_condition_stopped_with: u64,
-        stop_loss_condition_value: u64,
-        take_profit_condition_stopped_with: u64,
-        take_profit_condition_value: u64,
-        auto_close_condition_closed_with: u64,
-        auto_close_condition_value: u64,
-        deposit_amount: u64
+        open_position_condition: vector<u64>,
+        take_profit_condition: vector<u64>,
+        stop_loss_condition: vector<u64>,
+        auto_closed_conditions: vector<u64>,
+        deposit_amount: u64,
     ) {
         create_pocket(
             signer,
@@ -79,15 +74,10 @@ module hamsterpocket::chef {
             start_at,
             frequency,
             batch_volume,
-            open_position_condition_operator,
-            open_position_condition_value_x,
-            open_position_condition_value_y,
-            stop_loss_condition_stopped_with,
-            stop_loss_condition_value,
-            take_profit_condition_stopped_with,
-            take_profit_condition_value,
-            auto_close_condition_closed_with,
-            auto_close_condition_value
+            open_position_condition,
+            take_profit_condition,
+            stop_loss_condition,
+            auto_closed_conditions,
         );
 
         deposit<BaseToken>(signer, id, deposit_amount)
@@ -103,15 +93,10 @@ module hamsterpocket::chef {
         start_at: u64,
         frequency: u64,
         batch_volume: u64,
-        open_position_condition_operator: u64,
-        open_position_condition_value_x: u64,
-        open_position_condition_value_y: u64,
-        stop_loss_condition_stopped_with: u64,
-        stop_loss_condition_value: u64,
-        take_profit_condition_stopped_with: u64,
-        take_profit_condition_value: u64,
-        auto_close_condition_closed_with: u64,
-        auto_close_condition_value: u64
+        open_position_condition: vector<u64>,
+        take_profit_condition: vector<u64>,
+        stop_loss_condition: vector<u64>,
+        auto_closed_conditions: vector<u64>,
     ) {
         pocket::create_pocket(
             signer,
@@ -122,15 +107,10 @@ module hamsterpocket::chef {
             start_at,
             frequency,
             batch_volume,
-            open_position_condition_operator,
-            open_position_condition_value_x,
-            open_position_condition_value_y,
-            stop_loss_condition_stopped_with,
-            stop_loss_condition_value,
-            take_profit_condition_stopped_with,
-            take_profit_condition_value,
-            auto_close_condition_closed_with,
-            auto_close_condition_value
+            open_position_condition,
+            take_profit_condition,
+            stop_loss_condition,
+            auto_closed_conditions,
         )
     }
 
@@ -141,15 +121,10 @@ module hamsterpocket::chef {
         start_at: u64,
         frequency: u64,
         batch_volume: u64,
-        open_position_condition_operator: u64,
-        open_position_condition_value_x: u64,
-        open_position_condition_value_y: u64,
-        stop_loss_condition_stopped_with: u64,
-        stop_loss_condition_value: u64,
-        take_profit_condition_stopped_with: u64,
-        take_profit_condition_value: u64,
-        auto_close_condition_closed_with: u64,
-        auto_close_condition_value: u64
+        open_position_condition: vector<u64>,
+        take_profit_condition: vector<u64>,
+        stop_loss_condition: vector<u64>,
+        auto_closed_conditions: vector<u64>,
     ) {
         pocket::update_pocket(
             signer,
@@ -157,15 +132,10 @@ module hamsterpocket::chef {
             start_at,
             frequency,
             batch_volume,
-            open_position_condition_operator,
-            open_position_condition_value_x,
-            open_position_condition_value_y,
-            stop_loss_condition_stopped_with,
-            stop_loss_condition_value,
-            take_profit_condition_stopped_with,
-            take_profit_condition_value,
-            auto_close_condition_closed_with,
-            auto_close_condition_value
+            open_position_condition,
+            take_profit_condition,
+            stop_loss_condition,
+            auto_closed_conditions,
         )
     }
 

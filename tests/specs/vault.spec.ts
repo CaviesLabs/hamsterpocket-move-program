@@ -36,8 +36,9 @@ describe("vault", function () {
     stopLossConditionStoppedWith: StopConditionStoppedWith.UNSET,
     takeProfitConditionStoppedValue: BigInt(0),
     takeProfitConditionStoppedWith: StopConditionStoppedWith.UNSET,
-    autoCloseConditionValue: BigInt(0),
-    autoCloseConditionClosedWith: AutoCloseConditionClosedWith.UNSET,
+    autoClosedConditions: [
+      [AutoCloseConditionClosedWith.CLOSED_WITH_END_TIME, BigInt(13)],
+    ],
   };
 
   beforeAll(async () => {
