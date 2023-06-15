@@ -88,6 +88,8 @@ export class AptosBootingManager {
      * @dev Assign resource account
      */
     this.resourceAccountAddress = resourceAccount;
+
+    console.log(`Module deployed at: ${resourceAccount}`);
   }
 
   /**

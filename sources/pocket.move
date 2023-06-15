@@ -572,14 +572,44 @@ module hamsterpocket::pocket {
     // get trading info of a pocket
     public(friend) fun get_trading_info(
         pocket_id: String
-    ): (address, u64, u64, u64) acquires PocketStore, ResourceAccountStore {
+    ): (address, address, address, u64, u64, u64, u64) acquires PocketStore, ResourceAccountStore {
         let pocket = &get_pocket(pocket_id);
         return (
             pocket.owner,
+            pocket.base_token_address,
+            pocket.target_token_address,
             pocket.batch_volume,
             pocket.base_token_balance,
-            pocket.target_token_balance
+            pocket.target_token_balance,
+            pocket.status
         )
+    }
+
+    // check whether the pocket should be auto closed
+    public(friend) fun should_auto_close(
+        pocket_id: String
+    ): bool acquires PocketStore, ResourceAccountStore {
+        let pocket = &get_pocket(pocket_id);
+        let stop_conditions = pocket.auto_close_conditions;
+
+        let should_stop = false;
+
+        vector::for_each_ref<AutoCloseCondition>(&stop_conditions, |c| {
+            let condition: &AutoCloseCondition = c;
+
+            // so dirty switch but nothing I can do :(
+            if (condition.closed_with == CLOSED_WITH_END_TIME) {
+                should_stop = should_stop || timestamp::now_seconds() >= condition.value;
+            } else if (condition.closed_with == CLOSED_WITH_BATCH_AMOUNT) {
+                should_stop = should_stop || pocket.executed_batch_amount >= condition.value;
+            } else if (condition.closed_with == CLOSED_WITH_RECEIVED_TARGET_AMOUNT) {
+                should_stop = should_stop || pocket.total_received_target_amount >= condition.value;
+            } else if (condition.closed_with == CLOSED_WITH_SPENT_BASE_AMOUNT) {
+                should_stop = should_stop || pocket.total_swapped_base_amount >= condition.value;
+            };
+        });
+
+        return should_stop
     }
 
     // check whether the pocket should open position
