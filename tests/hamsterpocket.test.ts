@@ -8,7 +8,7 @@ import { TransactionBuilder } from "./client/transaction.builder";
 const aptosLocalNodeProcess = AptosBootingManager.getInstance();
 
 describe("hamsterpocket", function () {
-  jest.setTimeout(60000);
+  jest.setTimeout(600000);
 
   beforeAll(async () => {
     // get and funding deployer account

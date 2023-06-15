@@ -14,7 +14,6 @@ module hamsterpocket::pocket {
     use aptos_framework::coin;
     use hamsterpocket::u256;
     use hamsterpocket::math;
-    use aptos_std::big_vector::swap;
 
     // declare friends module
     friend hamsterpocket::chef;
@@ -606,7 +605,7 @@ module hamsterpocket::pocket {
 
         // currently we only check for price condition
         if (stop_loss_condition.stopped_with != STOPPED_WITH_PRICE) {
-            return false;
+            return false
         };
 
         let target_token_decimals = coin::decimals<TargetToken>();
