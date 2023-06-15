@@ -27,13 +27,9 @@ describe("manage_pocket", function () {
     batchVolume: BigInt(1000),
     frequency: BigInt(3600),
     startAt: BigInt(parseInt((new Date().getTime() / 1000).toString())),
-    openPositionConditionValueX: BigInt(0),
-    openPositionConditionValueY: BigInt(0),
-    openPositionConditionOperator: OpenPositionOperator.UNSET,
-    stopLossConditionStoppedValue: BigInt(0),
-    stopLossConditionStoppedWith: StopConditionStoppedWith.UNSET,
-    takeProfitConditionStoppedValue: BigInt(0),
-    takeProfitConditionStoppedWith: StopConditionStoppedWith.UNSET,
+    openPositionCondition: [OpenPositionOperator.UNSET, BigInt(0), BigInt(0)],
+    stopLossCondition: [StopConditionStoppedWith.UNSET, BigInt(0)],
+    takeProfitCondition: [StopConditionStoppedWith.UNSET, BigInt(0)],
     autoClosedConditions: [
       [AutoCloseConditionClosedWith.CLOSED_WITH_END_TIME, BigInt(13)],
     ],
@@ -124,9 +120,11 @@ describe("manage_pocket", function () {
     await txBuilder
       .buildUpdatePocketTransaction({
         ...pocketData,
-        openPositionConditionOperator: OpenPositionOperator.OPERATOR_GTE,
-        openPositionConditionValueX: BigInt(1),
-        openPositionConditionValueY: BigInt(10),
+        openPositionCondition: [
+          OpenPositionOperator.OPERATOR_GTE,
+          BigInt(1),
+          BigInt(10),
+        ],
         autoClosedConditions: [],
       })
       .execute();
