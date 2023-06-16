@@ -60,7 +60,7 @@ module hamsterpocket::chef {
     }
 
     // try closing position
-    public(friend) fun operator_close_position<BaseCoin, TargetCoin>(
+    public fun operator_close_position<BaseCoin, TargetCoin>(
         signer: &signer,
         pocket_id: vector<u8>,
         min_amount_out: u64
@@ -269,7 +269,7 @@ module hamsterpocket::chef {
     }
 
     // user close position
-    public(friend) fun close_position<BaseCoin, TargetCoin>(
+    public fun close_position<BaseCoin, TargetCoin>(
         signer: &signer,
         pocket_id: vector<u8>,
         min_amount_out: u64
