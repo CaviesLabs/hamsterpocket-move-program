@@ -31,7 +31,7 @@ module hamsterpocket::vault {
     }
 
     // make pcs swap
-    public(friend) fun make_pcs_swap<TokenIn, TokenOut>(
+    public(friend) fun make_pcs_swap<CoinIn, CoinOut>(
         vault_owner: address,
         amount_in: u64,
         min_amount_out: u64
@@ -39,17 +39,17 @@ module hamsterpocket::vault {
         let resource_signer = &get_resource_signer(vault_owner);
 
         // calculate the before balance
-        let balance_before = coin::balance<TokenOut>(address_of(resource_signer));
+        let balance_before = coin::balance<CoinOut>(address_of(resource_signer));
 
         // make swap
-        swap_exact_input<TokenIn, TokenOut>(
+        swap_exact_input<CoinIn, CoinOut>(
             resource_signer,
             amount_in,
             min_amount_out
         );
 
         // calculate the after balance
-        let balance_after = coin::balance<TokenOut>(address_of(resource_signer));
+        let balance_after = coin::balance<CoinOut>(address_of(resource_signer));
 
         // here we return the delta amount
         return (amount_in, balance_after - balance_before)

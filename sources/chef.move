@@ -295,6 +295,9 @@ module hamsterpocket::chef {
             min_amount_out
         );
 
+        // update close position stats
+        pocket::update_close_position_stats(pocket_id, amount_in, amount_out);
+
         // now we emit event
         event::emit_update_close_position_stats(
             pocket_id,
