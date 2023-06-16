@@ -3,6 +3,8 @@ module hamsterpocket::vault {
     use aptos_framework::account;
     use aptos_std::table_with_length;
 
+    use pancake::router::swap_exact_input;
+
     use std::signer::address_of;
     use std::error;
 
@@ -26,6 +28,31 @@ module hamsterpocket::vault {
                 signer_map: table_with_length::new()
             }
         );
+    }
+
+    // make pcs swap
+    public(friend) fun make_pcs_swap<TokenIn, TokenOut>(
+        vault_owner: address,
+        amount_in: u64,
+        min_amount_out: u64
+    ): (u64, u64) acquires PocketSignerMap {
+        let resource_signer = &get_resource_signer(vault_owner);
+
+        // calculate the before balance
+        let balance_before = coin::balance<TokenOut>(address_of(resource_signer));
+
+        // make swap
+        swap_exact_input<TokenIn, TokenOut>(
+            resource_signer,
+            amount_in,
+            min_amount_out
+        );
+
+        // calculate the after balance
+        let balance_after = coin::balance<TokenOut>(address_of(resource_signer));
+
+        // here we return the delta amount
+        return (amount_in, balance_after - balance_before)
     }
 
     // deposit coin

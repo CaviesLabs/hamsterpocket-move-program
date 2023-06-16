@@ -2,6 +2,7 @@ module hamsterpocket::platform {
     use aptos_framework::account;
     use aptos_std::table_with_length;
     use aptos_framework::account::SignerCapability;
+
     use std::error;
     use std::signer::address_of;
 

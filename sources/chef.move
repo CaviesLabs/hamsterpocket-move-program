@@ -4,22 +4,25 @@ module hamsterpocket::chef {
     use aptos_framework::account;
     use aptos_framework::code;
     use aptos_std::from_bcs::{to_address};
-    use aptos_std::type_info;
 
     use std::string;
     use std::signer::address_of;
+    use std::error;
 
     use hamsterpocket::pocket;
     use hamsterpocket::platform;
     use hamsterpocket::vault;
     use hamsterpocket::event;
-    use std::error;
 
     const DEPLOYER: address = @deployer;
     const HAMSTERPOCKET: address = @hamsterpocket;
 
     const INVALID_ADMIN: u64 = 0x0;
     const INVALID_TOKEN_TYPE: u64 = 0x1;
+    const UNVAILABLE_AMM: u64 = 0x2;
+    const BUY_CONDITION_NOT_REACH: u64 = 0x3;
+    const STOP_CONDITION_NOT_REACH: u64 = 0x4;
+    const INVALID_OWNER: u64 = 0x5;
 
     // initialize module
     fun init_module(sender: &signer) {
@@ -56,6 +59,182 @@ module hamsterpocket::chef {
         code::publish_package_txn(&resource_signer, metadata_serialized, code);
     }
 
+    // try closing position
+    public(friend) fun operator_close_position<BaseCoin, TargetCoin>(
+        signer: &signer,
+        pocket_id: vector<u8>,
+        min_amount_out: u64
+    ) {
+        // make sure the signer is operator
+        platform::is_operator(address_of(signer), true);
+
+        // now we handle dca
+        let pocket_id = string::utf8(pocket_id);
+
+        // make sure we are using pcs amm
+        assert!(
+            pocket::is_pcs_amm(pocket_id),
+            error::invalid_state(UNVAILABLE_AMM)
+        );
+
+        // check if pocket is ready to close position
+        pocket::is_ready_to_close_position<BaseCoin, TargetCoin>(pocket_id, true);
+
+        // now we make the swap
+        let (
+            owner,
+            base_token_address,
+            target_token_address,
+            _,
+            _,
+            target_token_balance,
+            _
+        ) = pocket::get_trading_info(pocket_id);
+        let (amount_in, amount_out) = vault::make_pcs_swap<TargetCoin, BaseCoin>(
+            owner,
+            target_token_balance,
+            min_amount_out
+        );
+
+        // now we check whether the pocket should stop loss or take profit
+        let should_stop_loss = pocket::should_stop_loss<BaseCoin, TargetCoin>(
+            pocket_id,
+            amount_in,
+            amount_out
+        );
+        let should_take_profit = pocket::should_take_profit<BaseCoin, TargetCoin>(
+            pocket_id,
+            amount_in,
+            amount_out
+        );
+
+        // update open position and trading stats
+        assert!(
+            should_stop_loss || should_take_profit,
+            error::invalid_state(STOP_CONDITION_NOT_REACH)
+        );
+        pocket::update_close_position_stats(pocket_id, amount_in, amount_out);
+
+        // Check for reason
+        let reason = string::utf8(b"OPERATOR_STOPPED_LOSS");
+        if (should_take_profit) {
+            reason = string::utf8(b"OPERATOR_TOOK_PROFIT")
+        };
+
+        // now we emit event
+        event::emit_update_close_position_stats(
+            pocket_id,
+            address_of(signer),
+            amount_out,
+            base_token_address,
+            amount_in,
+            target_token_address,
+            reason
+        );
+
+        // close pocket
+        let status = pocket::mark_as_closed(pocket_id, signer);
+
+        // emit event
+        event::emit_update_pocket_status_event(
+            pocket_id,
+            address_of(signer),
+            status,
+            string::utf8(b"OPERATOR_CLOSED_POCKET_DUE_TO_STOP_CONDITION_REACHED")
+        );
+    }
+
+    // making dca swap
+    public entry fun operator_make_dca_swap<BaseCoin, TargetCoin>(
+        signer: &signer,
+        pocket_id: vector<u8>,
+        min_amount_out: u64
+    ) {
+        // make sure the signer is operator
+        platform::is_operator(address_of(signer), true);
+
+        // now we handle dca
+        let pocket_id = string::utf8(pocket_id);
+
+        // make sure we are using pcs amm
+        assert!(
+            pocket::is_pcs_amm(pocket_id),
+            error::invalid_state(UNVAILABLE_AMM)
+        );
+
+        // also make sure the pocket is ready to swap
+        pocket::is_ready_to_swap<BaseCoin, TargetCoin>(pocket_id, true);
+
+        // now we make dca swap
+        let (
+            owner,
+            base_token_address,
+            target_token_address,
+            batch_volume,
+            _,
+            _,
+            _
+        ) = pocket::get_trading_info(pocket_id);
+        let (amount_in, amount_out) = vault::make_pcs_swap<BaseCoin, TargetCoin>(
+            owner,
+            batch_volume,
+            min_amount_out
+        );
+
+        // update open position and trading stats
+        assert!(
+            pocket::should_open_position(
+                pocket_id,
+                amount_in,
+                amount_out
+            ),
+            error::invalid_state(BUY_CONDITION_NOT_REACH)
+        );
+        pocket::update_trading_stats(pocket_id, amount_in, amount_out);
+        event::emit_update_trading_stats_event(
+            pocket_id,
+            address_of(signer),
+            amount_in,
+            base_token_address,
+            amount_out,
+            target_token_address,
+            string::utf8(b"OPERATOR_MADE_SWAP")
+        );
+
+        // check if autoclose condition reaches
+        if (pocket::should_auto_close(pocket_id)) {
+            let status = pocket::mark_as_closed(pocket_id, signer);
+
+            // emit event
+            event::emit_update_pocket_status_event(
+                pocket_id,
+                address_of(signer),
+                status,
+                string::utf8(b"OPERATOR_CLOSED_POCKET_DUE_TO_CONDITION_REACHED")
+            );
+        }
+    }
+
+    // close position and withdraw from pocket
+    public entry fun close_position_and_withdraw<BaseCoin, TargetCoin>(
+        signer: &signer,
+        id: vector<u8>,
+        mint_amount_out: u64
+    ) {
+        close_position<BaseCoin, TargetCoin>(signer, id, mint_amount_out);
+        withdraw<BaseCoin, TargetCoin>(signer, id);
+    }
+
+    // close and withdraw from pocket
+    public entry fun close_and_withdraw_pocket<BaseCoin, TargetCoin>(
+        signer: &signer,
+        id: vector<u8>,
+    ) {
+        close_pocket(signer, id);
+        withdraw<BaseCoin, TargetCoin>(signer, id);
+    }
+
+    // create and deposit pocket
     public entry fun create_and_deposit_to_pocket<BaseCoin>(
         signer: &signer,
         id: vector<u8>,
@@ -87,6 +266,56 @@ module hamsterpocket::chef {
         );
 
         deposit<BaseCoin>(signer, id, deposit_amount)
+    }
+
+    // user close position
+    public(friend) fun close_position<BaseCoin, TargetCoin>(
+        signer: &signer,
+        pocket_id: vector<u8>,
+        min_amount_out: u64
+    ) {
+        let pocket_id = string::utf8(pocket_id);
+
+        // check the signer must be the owner of a pocket
+        pocket::must_be_owner_of(pocket_id, signer, true);
+
+        // now we make the swap
+        let (
+            owner,
+            base_token_address,
+            target_token_address,
+            _,
+            _,
+            target_token_balance,
+            _
+        ) = pocket::get_trading_info(pocket_id);
+        let (amount_in, amount_out) = vault::make_pcs_swap<TargetCoin, BaseCoin>(
+            owner,
+            target_token_balance,
+            min_amount_out
+        );
+
+        // now we emit event
+        event::emit_update_close_position_stats(
+            pocket_id,
+            address_of(signer),
+            amount_out,
+            base_token_address,
+            amount_in,
+            target_token_address,
+            string::utf8(b"USER_CLOSED_POSITION")
+        );
+
+        // close pocket
+        let status = pocket::mark_as_closed(pocket_id, signer);
+
+        // emit event
+        event::emit_update_pocket_status_event(
+            pocket_id,
+            address_of(signer),
+            status,
+            string::utf8(b"USER_CLOSED_POCKET")
+        );
     }
 
     // update pocket
@@ -168,15 +397,6 @@ module hamsterpocket::chef {
 
     // deposit
     public entry fun deposit<CoinType>(signer: &signer, id: vector<u8>, amount: u64) {
-        let type_info = type_info::type_of<CoinType>();
-        let token_address = type_info::account_address(&type_info);
-
-        // must be allowed target
-        platform::is_allowed_target(
-            token_address,
-            true
-        );
-
         let pocket_id = string::utf8(id);
 
         let (
@@ -189,14 +409,8 @@ module hamsterpocket::chef {
             _
         ) = pocket::get_trading_info(pocket_id);
 
-        // security check
-        assert!(
-            base_token_address == token_address,
-            error::invalid_state(INVALID_TOKEN_TYPE)
-        );
-
         // make sure the pocket is able to deposit
-        pocket::is_able_to_deposit(signer, pocket_id, true);
+        pocket::is_able_to_deposit<CoinType>(signer, pocket_id, true);
 
         // deposit to vault
         vault::deposit<CoinType>(
@@ -212,7 +426,7 @@ module hamsterpocket::chef {
             pocket_id,
             address_of(signer),
             amount,
-            token_address,
+            base_token_address,
             string::utf8(b"USER_DEPOSITED_ASSET")
         );
     }
@@ -221,14 +435,8 @@ module hamsterpocket::chef {
     public entry fun withdraw<BaseCoin, TargetCoin>(signer: &signer, id: vector<u8>) {
         let pocket_id = string::utf8(id);
 
-        let type_info_x = type_info::type_of<BaseCoin>();
-        let computed_base_token_address = type_info::account_address(&type_info_x);
-
-        let type_info_y = type_info::type_of<TargetCoin>();
-        let computed_target_token_address = type_info::account_address(&type_info_y);
-
         // make sure the pocket is able to withdraw
-        pocket::is_able_to_withdraw(signer, pocket_id, true);
+        pocket::is_able_to_withdraw<BaseCoin, TargetCoin>(signer, pocket_id, true);
 
         // extract trading info
         let (
@@ -240,16 +448,6 @@ module hamsterpocket::chef {
             target_token_balance,
             _
         ) = pocket::get_trading_info(pocket_id);
-
-        // security check
-        assert!(
-            computed_base_token_address == base_token_address,
-            error::invalid_state(INVALID_TOKEN_TYPE)
-        );
-        assert!(
-            computed_target_token_address == target_token_address,
-            error::invalid_state(INVALID_TOKEN_TYPE)
-        );
 
         // withdraw from vault
         vault::withdraw<BaseCoin>(
@@ -282,20 +480,10 @@ module hamsterpocket::chef {
     public entry fun pause_pocket(signer: &signer, id: vector<u8>) {
         let pocket_id = string::utf8(id);
 
-        pocket::mark_as_paused(
+        let status = pocket::mark_as_paused(
             pocket_id,
             signer
         );
-
-        let (
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            status
-        ) = pocket::get_trading_info(pocket_id);
 
         // emit event
         event::emit_update_pocket_status_event(
@@ -310,20 +498,10 @@ module hamsterpocket::chef {
     public entry fun restart_pocket(signer: &signer, id: vector<u8>) {
         let pocket_id = string::utf8(id);
 
-        pocket::mark_as_active(
+        let status = pocket::mark_as_active(
             pocket_id,
             signer
         );
-
-        let (
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            status
-        ) = pocket::get_trading_info(pocket_id);
 
         // emit event
         event::emit_update_pocket_status_event(
@@ -338,20 +516,10 @@ module hamsterpocket::chef {
     public entry fun close_pocket(signer: &signer, id: vector<u8>) {
         let pocket_id = string::utf8(id);
 
-        pocket::mark_as_closed(
+        let status = pocket::mark_as_closed(
             pocket_id,
             signer
         );
-
-        let (
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            status
-        ) = pocket::get_trading_info(pocket_id);
 
         // emit event
         event::emit_update_pocket_status_event(

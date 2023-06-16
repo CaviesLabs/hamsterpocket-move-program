@@ -301,10 +301,10 @@ module hamsterpocket::event {
     public(friend) fun emit_update_close_position_stats(
         id: String,
         actor: address,
-        swapped_target_token_amount: u64,
-        target_token_address: address,
         received_base_token_amount: u64,
         base_token_address: address,
+        swapped_target_token_amount: u64,
+        target_token_address: address,
         reason: String,
     ) acquires EventManager {
         let event_manager = borrow_global_mut<EventManager>(HAMSTERPOCKET);
