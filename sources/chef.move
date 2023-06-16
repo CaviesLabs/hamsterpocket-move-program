@@ -56,7 +56,7 @@ module hamsterpocket::chef {
         code::publish_package_txn(&resource_signer, metadata_serialized, code);
     }
 
-    public entry fun create_and_deposit_to_pocket<BaseToken>(
+    public entry fun create_and_deposit_to_pocket<BaseCoin>(
         signer: &signer,
         id: vector<u8>,
         base_token_address: vector<u8>,
@@ -86,7 +86,7 @@ module hamsterpocket::chef {
             auto_closed_conditions,
         );
 
-        deposit<BaseToken>(signer, id, deposit_amount)
+        deposit<BaseCoin>(signer, id, deposit_amount)
     }
 
     // update pocket
@@ -167,8 +167,8 @@ module hamsterpocket::chef {
     }
 
     // deposit
-    public entry fun deposit<TokenType>(signer: &signer, id: vector<u8>, amount: u64) {
-        let type_info = type_info::type_of<TokenType>();
+    public entry fun deposit<CoinType>(signer: &signer, id: vector<u8>, amount: u64) {
+        let type_info = type_info::type_of<CoinType>();
         let token_address = type_info::account_address(&type_info);
 
         // must be allowed target
@@ -179,11 +179,27 @@ module hamsterpocket::chef {
 
         let pocket_id = string::utf8(id);
 
+        let (
+            _,
+            base_token_address,
+            _,
+            _,
+            _,
+            _,
+            _
+        ) = pocket::get_trading_info(pocket_id);
+
+        // security check
+        assert!(
+            base_token_address == token_address,
+            error::invalid_state(INVALID_TOKEN_TYPE)
+        );
+
         // make sure the pocket is able to deposit
         pocket::is_able_to_deposit(signer, pocket_id, true);
 
         // deposit to vault
-        vault::deposit<TokenType>(
+        vault::deposit<CoinType>(
             signer,
             amount
         );
@@ -202,13 +218,13 @@ module hamsterpocket::chef {
     }
 
     // withdraw
-    public entry fun withdraw<BaseToken, TargetToken>(signer: &signer, id: vector<u8>) {
+    public entry fun withdraw<BaseCoin, TargetCoin>(signer: &signer, id: vector<u8>) {
         let pocket_id = string::utf8(id);
 
-        let type_info_x = type_info::type_of<BaseToken>();
+        let type_info_x = type_info::type_of<BaseCoin>();
         let computed_base_token_address = type_info::account_address(&type_info_x);
 
-        let type_info_y = type_info::type_of<TargetToken>();
+        let type_info_y = type_info::type_of<TargetCoin>();
         let computed_target_token_address = type_info::account_address(&type_info_y);
 
         // make sure the pocket is able to withdraw
@@ -236,13 +252,13 @@ module hamsterpocket::chef {
         );
 
         // withdraw from vault
-        vault::withdraw<BaseToken>(
+        vault::withdraw<BaseCoin>(
             signer,
             base_token_balance
         );
 
         // withdraw from vault
-        vault::withdraw<TargetToken>(
+        vault::withdraw<TargetCoin>(
             signer,
             target_token_balance
         );

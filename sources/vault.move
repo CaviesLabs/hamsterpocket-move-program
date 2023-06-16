@@ -29,7 +29,7 @@ module hamsterpocket::vault {
     }
 
     // deposit coin
-    public(friend) fun deposit<TokenType>(
+    public(friend) fun deposit<CoinType>(
         sender: &signer,
         amount: u64
     ) acquires PocketSignerMap {
@@ -57,12 +57,12 @@ module hamsterpocket::vault {
         };
 
         // create coin store if sender didn't have one
-        if (!coin::is_account_registered<TokenType>(address_of(&resource_account))) {
-            coin::register<TokenType>(&resource_account);
+        if (!coin::is_account_registered<CoinType>(address_of(&resource_account))) {
+            coin::register<CoinType>(&resource_account);
         };
 
         // now we start transferring coin to the contract
-        coin::transfer<TokenType>(
+        coin::transfer<CoinType>(
             sender,
             address_of(&resource_account),
             amount
@@ -70,7 +70,7 @@ module hamsterpocket::vault {
     }
 
     // withdraw coin
-    public(friend) fun withdraw<TokenType>(
+    public(friend) fun withdraw<CoinType>(
         sender: &signer,
         amount: u64
     ): u64 acquires PocketSignerMap {
@@ -81,13 +81,13 @@ module hamsterpocket::vault {
 
         // create coin store if sender didn't have one
         assert!(
-            coin::is_account_registered<TokenType>(
+            coin::is_account_registered<CoinType>(
                 address_of(&resource_signer)
             ),
             error::unavailable(UNAVAILABLE_RESOURCE)
         );
 
-        coin::transfer<TokenType>(
+        coin::transfer<CoinType>(
             &resource_signer,
             address_of(sender),
             amount
