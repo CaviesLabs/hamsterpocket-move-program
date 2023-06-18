@@ -12,7 +12,6 @@ import {
   transformPocketEntity,
 } from "../client/entities/pocket.entity";
 import { AptosBootingManager } from "../aptos-node/aptos.boot";
-import { APTOS_GENESIS_ADDRESS } from "../client/libs/constants";
 
 const aptosNode = AptosBootingManager.getInstance();
 
