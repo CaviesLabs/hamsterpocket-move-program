@@ -272,9 +272,6 @@ module hamsterpocket::pocket {
         // now we extract pocket
         let pocket = &mut get_pocket(id);
 
-        // make sure the pocket is able to udpate
-        is_able_to_update(signer, pocket.id,true);
-
         // now we assign pocket data from params
         pocket.frequency = frequency;
         pocket.batch_volume = batch_volume;
@@ -389,9 +386,6 @@ module hamsterpocket::pocket {
         // extract pocket
         let pocket = &mut get_pocket(pocket_id);
 
-        // make sure the pocket is able to close
-        is_able_to_close(signer, pocket_id, true);
-
         // update data
         pocket.status = STATUS_CLOSED;
 
@@ -410,9 +404,6 @@ module hamsterpocket::pocket {
         // extract pocket
         let pocket = &mut get_pocket(pocket_id);
 
-        // make sure the pocket is able to restart
-        is_able_to_restart(signer, pocket_id, true);
-
         // modify data
         pocket.status = STATUS_ACTIVE;
 
@@ -422,15 +413,9 @@ module hamsterpocket::pocket {
     }
 
     // pause pocket on behalf of owner
-    public(friend) fun mark_as_paused(
-        pocket_id: String,
-        signer: &signer
-    ): u64 acquires PocketStore, ResourceAccountStore {
+    public(friend) fun mark_as_paused(pocket_id: String): u64 acquires PocketStore, ResourceAccountStore {
         // extract pocket
         let pocket = &mut get_pocket(pocket_id);
-
-        // make sure the pocket is able to pause
-        is_able_to_pause(signer, pocket_id, true);
 
         // modify data
         pocket.status = STATUS_PAUSED;

@@ -394,6 +394,10 @@ module hamsterpocket::chef {
     ) {
         let pocket_id = string::utf8(id);
 
+        // make sure the pocket is able to update
+        pocket::is_able_to_update(signer,pocket_id,true);
+
+        // now we update pocket
         pocket::update_pocket(
             signer,
             pocket_id,
@@ -502,6 +506,10 @@ module hamsterpocket::chef {
     public entry fun pause_pocket(signer: &signer, id: vector<u8>) {
         let pocket_id = string::utf8(id);
 
+        // make sure the pocket is able to pause
+        pocket::is_able_to_pause(signer, pocket_id, true);
+
+        // mark as paused
         let status = pocket::mark_as_paused(
             pocket_id,
             signer
@@ -520,6 +528,10 @@ module hamsterpocket::chef {
     public entry fun restart_pocket(signer: &signer, id: vector<u8>) {
         let pocket_id = string::utf8(id);
 
+        // make sure the pocket is able to restart
+        pocket::is_able_to_restart(signer, pocket_id, true);
+
+        // mark as active
         let status = pocket::mark_as_active(
             pocket_id,
             signer
@@ -538,6 +550,10 @@ module hamsterpocket::chef {
     public entry fun close_pocket(signer: &signer, id: vector<u8>) {
         let pocket_id = string::utf8(id);
 
+        // make sure the pocket is able to close
+        pocket::is_able_to_close(signer, pocket_id, true);
+
+        // mark as closed
         let status = pocket::mark_as_closed(
             pocket_id,
             signer
