@@ -107,12 +107,9 @@ module hamsterpocket::vault {
         );
 
         // create coin store if sender didn't have one
-        assert!(
-            coin::is_account_registered<CoinType>(
-                address_of(&resource_signer)
-            ),
-            error::unavailable(UNAVAILABLE_RESOURCE)
-        );
+        if (!coin::is_account_registered<CoinType>(address_of(sender))) {
+            coin::register<CoinType>(sender);
+        };
 
         coin::transfer<CoinType>(
             &resource_signer,
