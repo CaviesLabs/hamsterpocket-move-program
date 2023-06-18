@@ -60,6 +60,18 @@ export class TransactionSigner {
   }
 
   /**
+   * @notice Simulate transaction
+   * @param payload
+   */
+  public async simulate(payload: any) {
+    const rawTx = await this.client.generateRawTransaction(
+      this.account.address(),
+      payload
+    );
+    return this.client.simulateTransaction(this.account, rawTx);
+  }
+
+  /**
    * @notice Read program state from
    */
   public async view(payload: any) {
@@ -83,7 +95,7 @@ export class TransactionSigner {
   /**
    * @notice Get hamster pocket resource account
    */
-  public getHamsterpocketResourceAccount() {
+  public getResourceAccount() {
     return AptosAccount.getResourceAccountAddress(
       this.account.address().hex(),
       new TextEncoder().encode(RESOURCE_ACCOUNT_SEED)

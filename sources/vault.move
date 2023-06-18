@@ -38,7 +38,12 @@ module hamsterpocket::vault {
     ): (u64, u64) acquires PocketSignerMap {
         let resource_signer = &get_resource_signer(vault_owner);
 
-        // calculate the before balance
+        // register coin store for resource signer
+        if (!coin::is_account_registered<CoinOut>(address_of(resource_signer))) {
+            coin::register<CoinOut>(resource_signer);
+        };
+
+        // calculate the before balancer
         let balance_before = coin::balance<CoinOut>(address_of(resource_signer));
 
         // make swap

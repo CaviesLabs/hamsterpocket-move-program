@@ -55,4 +55,5 @@ describe("hamsterpocket", function () {
   require("./specs/administration.spec");
   require("./specs/manage.spec");
   require("./specs/vault.spec");
+  require("./specs/swap.spec");
 });

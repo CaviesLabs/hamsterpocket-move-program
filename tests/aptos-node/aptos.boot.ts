@@ -1,7 +1,14 @@
 import dotenv from "dotenv";
+
 dotenv.config();
 
-import { AptosAccount, AptosClient, CoinClient, HexString } from "aptos";
+import {
+  AptosAccount,
+  AptosClient,
+  CoinClient,
+  HexString,
+  FaucetClient,
+} from "aptos";
 
 export class AptosBootingManager {
   public static currentInstance: AptosBootingManager | undefined;
@@ -22,8 +29,6 @@ export class AptosBootingManager {
   constructor(readonly handler = require("node:child_process")) {
     // initialize client first
     this.client = new AptosClient(AptosBootingManager.APTOS_NODE_URL);
-
-    console.log(process.env.FAUCET_SECRET_KEY);
   }
 
   /**
@@ -62,21 +67,6 @@ export class AptosBootingManager {
     privateKey: string
   ) {
     /**
-     * @dev Funding account
-     */
-    this.handler.execSync(
-      [
-        "aptos",
-        "account",
-        "fund-with-faucet",
-        `--account ${resourceAccount}`,
-        `--faucet-url ${AptosBootingManager.APTOS_FAUCET_URL}`,
-        `--url ${AptosBootingManager.APTOS_NODE_URL}`,
-      ].join(" "),
-      { stdio: "inherit" }
-    );
-
-    /**
      * @dev Deploy program
      */
     this.handler.execSync(
@@ -106,19 +96,26 @@ export class AptosBootingManager {
    * @param addressHex
    */
   public async fundingWithFaucet(addressHex: string): Promise<void> {
-    return Promise.resolve(
-      this.handler.execSync(
-        [
-          "aptos",
-          "account",
-          "fund-with-faucet",
-          `--account ${addressHex}`,
-          `--faucet-url ${AptosBootingManager.APTOS_FAUCET_URL}`,
-          `--url ${AptosBootingManager.APTOS_NODE_URL}`,
-        ].join(" "),
-        { stdio: "inherit" }
-      )
+    const faucetClient = new FaucetClient(
+      AptosBootingManager.APTOS_NODE_URL,
+      AptosBootingManager.APTOS_FAUCET_URL
     );
+
+    try {
+      await faucetClient.fundAccount(addressHex, 1e8);
+      return;
+    } catch (e) {
+      console.log(e);
+    }
+
+    // check and funding with alternative faucet
+    const coinClient = new CoinClient(this.client);
+
+    // transfer from alternative faucet
+    await coinClient.transfer(this.alternativeFaucetAccount, addressHex, 1e8, {
+      createReceiverIfMissing: true,
+    });
+    console.log(`funded 1 APTOS with alternative faucet ...`);
   }
 
   /**
@@ -130,17 +127,8 @@ export class AptosBootingManager {
     // push to account registry
     this.managedAccounts.push(account);
 
-    // funding account
-    try {
-      // funding account
-      await this.fundingWithFaucet(account.address().hex());
-    } catch (e) {
-      // initialize coin client
-      const coinClient = new CoinClient(this.client);
-
-      // transfer
-      await coinClient.transfer(this.alternativeFaucetAccount, account, 1e8);
-    }
+    // fund account with faucet
+    await this.fundingWithFaucet(account.address().hex());
 
     return account;
   }

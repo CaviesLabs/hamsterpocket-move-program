@@ -148,14 +148,7 @@ describe("vault", function () {
     expect(pocket.target_coin_balance).toEqual(BigInt(0));
   });
 
-  it("[vault] should: can withdraw token", async () => {
-    /**
-     * @dev Close pocket first
-     */
-    await txBuilder
-      .buildClosePocketTransaction({ id: pocketData.id })
-      .execute();
-
+  it("[vault] should: can close and withdraw token", async () => {
     /**
      * @dev Delegated vault should be appeared
      */
@@ -179,11 +172,16 @@ describe("vault", function () {
      * @dev Now we deposit to created pocket
      */
     await txBuilder
-      .buildWithdrawTransaction({
-        baseCoinType: "0x1::aptos_coin::AptosCoin",
-        targetCoinType: "0x1::aptos_coin::AptosCoin",
-        id: pocketData.id,
-      })
+      .buildClosePocketAndWithdrawTransaction(
+        {
+          id: pocketData.id,
+        },
+        {
+          baseCoinType: "0x1::aptos_coin::AptosCoin",
+          targetCoinType: "0x1::aptos_coin::AptosCoin",
+          id: pocketData.id,
+        }
+      )
       .execute();
 
     /**
@@ -199,6 +197,43 @@ describe("vault", function () {
      */
     const [untransformedPocket] = await txBuilder
       .buildGetPocket({ id: pocketData.id })
+      .execute();
+    const pocket = transformPocketEntity(untransformedPocket);
+
+    expect(pocket.status).toEqual(PocketStatus.STATUS_WITHDRAWN);
+    expect(pocket.base_coin_balance).toEqual(BigInt(0));
+    expect(pocket.target_coin_balance).toEqual(BigInt(0));
+  });
+
+  it("[vault] should: can withdraw token", async () => {
+    const pocketId = "test-withdraw-pocket-id";
+
+    await txBuilder
+      .buildDepositTransaction({
+        coinType: "0x1::aptos_coin::AptosCoin",
+        amount: BigInt(10000),
+        id: pocketData.id,
+      })
+      .execute();
+    await txBuilder.buildClosePocketTransaction({ id: pocketId }).execute();
+    await txBuilder
+      .buildCreatePocketTransaction({
+        ...pocketData,
+        id: pocketId,
+      })
+      .execute();
+
+    // close position
+    await txBuilder
+      .buildWithdrawTransaction({
+        baseCoinType: "0x1::aptos_coin::AptosCoin",
+        targetCoinType: "0x1::aptos_coin::AptosCoin",
+        id: pocketId,
+      })
+      .execute();
+
+    const [untransformedPocket] = await txBuilder
+      .buildGetPocket({ id: pocketId })
       .execute();
     const pocket = transformPocketEntity(untransformedPocket);
 

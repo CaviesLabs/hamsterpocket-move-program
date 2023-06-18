@@ -5,6 +5,8 @@ module hamsterpocket::chef {
     use aptos_framework::code;
     use aptos_std::from_bcs::{to_address};
 
+    use pancake::router;
+
     use std::string;
     use std::signer::address_of;
     use std::error;
@@ -60,7 +62,7 @@ module hamsterpocket::chef {
     }
 
     // try closing position
-    public fun operator_close_position<BaseCoin, TargetCoin>(
+    public entry fun operator_close_position<BaseCoin, TargetCoin>(
         signer: &signer,
         pocket_id: vector<u8>,
         min_amount_out: u64
@@ -132,8 +134,15 @@ module hamsterpocket::chef {
             reason
         );
 
-        // close pocket
-        let status = pocket::mark_as_closed(pocket_id, signer);
+        let (
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            status
+        ) = pocket::get_trading_info(pocket_id);
 
         // emit event
         event::emit_update_pocket_status_event(
@@ -265,7 +274,7 @@ module hamsterpocket::chef {
     }
 
     // user close position
-    public fun close_position<BaseCoin, TargetCoin>(
+    public entry fun close_position<BaseCoin, TargetCoin>(
         signer: &signer,
         pocket_id: vector<u8>,
         min_amount_out: u64
@@ -305,8 +314,16 @@ module hamsterpocket::chef {
             string::utf8(b"USER_CLOSED_POSITION")
         );
 
-        // close pocket
-        let status = pocket::mark_as_closed(pocket_id, signer);
+        // extract trading info
+        let (
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            status
+        ) = pocket::get_trading_info(pocket_id);
 
         // emit event
         event::emit_update_pocket_status_event(
@@ -599,6 +616,14 @@ module hamsterpocket::chef {
         return platform::is_admin(
             to_address(address),
             false
+        )
+    }
+
+    // get quote
+    #[view]
+    public fun get_quote<BaseCoin, TargetCoin>(amount_in: u64): u64 {
+        return router::get_amount_in<TargetCoin, BaseCoin>(
+            amount_in
         )
     }
 }

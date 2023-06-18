@@ -352,6 +352,9 @@ module hamsterpocket::pocket {
         pocket.base_coin_balance = pocket.base_coin_balance + received_base_coin_amount;
         pocket.target_coin_balance = pocket.target_coin_balance - swapped_target_coin_amount;
 
+        // close position means also close pocket
+        pocket.status = STATUS_CLOSED;
+
         // commit data changes
         commit_pocket_data(id, *pocket);
     }
@@ -481,7 +484,6 @@ module hamsterpocket::pocket {
         let pocket = &get_pocket(pocket_id);
 
         let valid_signer = is_owner_of(pocket, signer) || platform::is_operator(address_of(signer), false);
-
         let result = valid_signer &&
             pocket.status != STATUS_CLOSED &&
             pocket.status != STATUS_WITHDRAWN;

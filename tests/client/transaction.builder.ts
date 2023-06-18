@@ -1,11 +1,12 @@
-import { HexString, TxnBuilderTypes } from "aptos";
+import { HexString, TxnBuilderTypes, BCS } from "aptos";
 
-import * as BCS from "./libs/bcs.helper";
 import {
   CreatePocketParams,
   CreateResourceAccountParams,
   DepositParams,
+  ExecTradingParams,
   GetPocketParams,
+  GetQuoteParams,
   SetAllowedOperatorParams,
   SetInteractiveTargetParams,
   UpdatePocketParams,
@@ -22,10 +23,6 @@ const {
   StructTag,
 } = TxnBuilderTypes;
 
-interface Executor<T> {
-  execute: () => Promise<T>;
-}
-
 /**
  * @notice Aptos Transaction Builder. Output would be raw transaction hex.
  */
@@ -40,13 +37,14 @@ export class TransactionBuilder {
    * @param payload
    * @private
    */
-  private getTransactionalExecutor(payload: any): Executor<{ txId: string }> {
+  private getTransactionalExecutor(payload: any) {
     return {
       execute: async () => {
         return {
           txId: await this.signer.signAndSendTransaction(payload, true),
         };
       },
+      simulate: async () => this.signer.simulate(payload),
     };
   }
 
@@ -55,7 +53,7 @@ export class TransactionBuilder {
    * @param payload
    * @private
    */
-  private getViewExecutor<T>(payload: any): Executor<T> {
+  private getViewExecutor<T>(payload: any) {
     return {
       execute: async () => {
         const result = await this.signer.view(payload);
@@ -65,12 +63,237 @@ export class TransactionBuilder {
   }
 
   /**
+   * @notice Build operator make dca swap transaction
+   * @param execTradingParams
+   */
+  public buildOperatorClosePositionTransaction(
+    execTradingParams: ExecTradingParams
+  ) {
+    const baseCoin = new TypeTagStruct(
+      StructTag.fromString(execTradingParams.baseCoinType)
+    );
+    const targetCoin = new TypeTagStruct(
+      StructTag.fromString(execTradingParams.targetCoinType)
+    );
+
+    /**
+     * @dev Build transaction
+     */
+    return this.getTransactionalExecutor(
+      new TransactionPayloadEntryFunction(
+        EntryFunction.natural(
+          `${this.resourceAccount}::chef`,
+          "operator_close_position",
+          [baseCoin, targetCoin],
+          [
+            BCS.bcsSerializeStr(execTradingParams.id),
+            BCS.bcsSerializeUint64(execTradingParams.minAmountOut),
+          ]
+        )
+      )
+    );
+  }
+
+  /**
+   * @notice Build operator make dca swap transaction
+   * @param execTradingParams
+   */
+  public buildOperatorMakeDCASwapTransaction(
+    execTradingParams: ExecTradingParams
+  ) {
+    const baseCoin = new TypeTagStruct(
+      StructTag.fromString(execTradingParams.baseCoinType)
+    );
+    const targetCoin = new TypeTagStruct(
+      StructTag.fromString(execTradingParams.targetCoinType)
+    );
+
+    /**
+     * @dev Build transaction
+     */
+    return this.getTransactionalExecutor(
+      new TransactionPayloadEntryFunction(
+        EntryFunction.natural(
+          `${this.resourceAccount}::chef`,
+          "operator_make_dca_swap",
+          [baseCoin, targetCoin],
+          [
+            BCS.bcsSerializeStr(execTradingParams.id),
+            BCS.bcsSerializeUint64(execTradingParams.minAmountOut),
+          ]
+        )
+      )
+    );
+  }
+
+  /**
+   * @notice Build close position and withdraw pocket transaction
+   * @param execTradingParams
+   */
+  public buildClosePositionAndWithdrawTransaction(
+    execTradingParams: ExecTradingParams
+  ) {
+    const baseCoin = new TypeTagStruct(
+      StructTag.fromString(execTradingParams.baseCoinType)
+    );
+    const targetCoin = new TypeTagStruct(
+      StructTag.fromString(execTradingParams.targetCoinType)
+    );
+
+    /**
+     * @dev Build transaction
+     */
+    return this.getTransactionalExecutor(
+      new TransactionPayloadEntryFunction(
+        EntryFunction.natural(
+          `${this.resourceAccount}::chef`,
+          "close_position_and_withdraw",
+          [baseCoin, targetCoin],
+          [
+            BCS.bcsSerializeStr(execTradingParams.id),
+            BCS.bcsSerializeUint64(execTradingParams.minAmountOut),
+          ]
+        )
+      )
+    );
+  }
+
+  /**
+   * @notice Build close position
+   * @param execTradingParams
+   */
+  public buildClosePositionTransaction(execTradingParams: ExecTradingParams) {
+    const baseCoin = new TypeTagStruct(
+      StructTag.fromString(execTradingParams.baseCoinType)
+    );
+    const targetCoin = new TypeTagStruct(
+      StructTag.fromString(execTradingParams.targetCoinType)
+    );
+
+    /**
+     * @dev Build transaction
+     */
+    return this.getTransactionalExecutor(
+      new TransactionPayloadEntryFunction(
+        EntryFunction.natural(
+          `${this.resourceAccount}::chef`,
+          "close_position",
+          [baseCoin, targetCoin],
+          [
+            BCS.bcsSerializeStr(execTradingParams.id),
+            BCS.bcsSerializeUint64(execTradingParams.minAmountOut),
+          ]
+        )
+      )
+    );
+  }
+
+  /**
+   * @notice Build close and withdraw pocket transaction
+   * @param closePocketParams
+   * @param withdrawParams
+   */
+  public buildClosePocketAndWithdrawTransaction(
+    closePocketParams: GetPocketParams,
+    withdrawParams: WithdrawParams
+  ) {
+    const baseCoin = new TypeTagStruct(
+      StructTag.fromString(withdrawParams.baseCoinType)
+    );
+    const targetCoin = new TypeTagStruct(
+      StructTag.fromString(withdrawParams.targetCoinType)
+    );
+
+    /**
+     * @dev Build transaction
+     */
+    return this.getTransactionalExecutor(
+      new TransactionPayloadEntryFunction(
+        EntryFunction.natural(
+          `${this.resourceAccount}::chef`,
+          "close_and_withdraw_pocket",
+          [baseCoin, targetCoin],
+          [BCS.bcsSerializeStr(closePocketParams.id)]
+        )
+      )
+    );
+  }
+
+  /**
+   * @notice Build create and deposit pocket
+   * @param createPocketParams
+   * @param depositParams
+   */
+  public buildCreatePocketAndDepositTransaction(
+    createPocketParams: CreatePocketParams,
+    depositParams: DepositParams
+  ) {
+    const baseCoin = new TypeTagStruct(
+      StructTag.fromString(createPocketParams.baseCoinType)
+    );
+    const targetCoin = new TypeTagStruct(
+      StructTag.fromString(createPocketParams.targetCoinType)
+    );
+
+    /**
+     * @dev Build transaction
+     */
+    return this.getTransactionalExecutor(
+      new TransactionPayloadEntryFunction(
+        EntryFunction.natural(
+          `${this.resourceAccount}::chef`,
+          "create_and_deposit_to_pocket",
+          [baseCoin, targetCoin],
+          [
+            BCS.bcsSerializeStr(createPocketParams.id),
+            BCS.bcsSerializeUint64(BigInt(createPocketParams.amm)),
+            BCS.bcsSerializeUint64(createPocketParams.startAt),
+            BCS.bcsSerializeUint64(createPocketParams.frequency),
+            BCS.bcsSerializeUint64(createPocketParams.batchVolume),
+            BCS.serializeVectorWithFunc(
+              [
+                createPocketParams.openPositionCondition[0],
+                createPocketParams.openPositionCondition[1],
+                createPocketParams.openPositionCondition[2],
+              ],
+              "serializeU64"
+            ),
+            BCS.serializeVectorWithFunc(
+              [
+                createPocketParams.takeProfitCondition[0],
+                createPocketParams.takeProfitCondition[1],
+              ],
+              "serializeU64"
+            ),
+
+            BCS.serializeVectorWithFunc(
+              [
+                createPocketParams.stopLossCondition[0],
+                createPocketParams.stopLossCondition[1],
+              ],
+              "serializeU64"
+            ),
+            BCS.serializeVectorWithFunc(
+              createPocketParams.autoClosedConditions.reduce<bigint[]>(
+                (accum, condition) => accum.concat(condition as bigint[]),
+                []
+              ),
+              "serializeU64"
+            ),
+            BCS.bcsSerializeUint64(depositParams.amount),
+          ]
+        )
+      )
+    );
+  }
+
+  /**
    * @notice Build create resource account transaction
    * @param params
    */
   public buildCreateResourceAccountTransaction(
     params: CreateResourceAccountParams
-  ): Executor<{ txId: string }> {
+  ) {
     /**
      * @dev Build transaction
      */
@@ -85,7 +308,7 @@ export class TransactionBuilder {
             BCS.bcsSerializeBytes(
               HexString.ensure(params.ownerAddress).toUint8Array()
             ),
-            BCS.bcsSerializeU64(params.amountToFund),
+            BCS.bcsSerializeUint64(params.amountToFund),
           ]
         )
       )
@@ -96,9 +319,7 @@ export class TransactionBuilder {
    * @notice Build set allowed operator transaction
    * @param params
    */
-  public buildSetOperatorTransaction(
-    params: SetAllowedOperatorParams
-  ): Executor<{ txId: string }> {
+  public buildSetOperatorTransaction(params: SetAllowedOperatorParams) {
     /**
      * @dev Build transaction
      */
@@ -137,7 +358,10 @@ export class TransactionBuilder {
           `${this.resourceAccount}::chef`,
           "deposit",
           [tokenTag],
-          [BCS.bcsSerializeStr(params.id), BCS.bcsSerializeU64(params.amount)]
+          [
+            BCS.bcsSerializeStr(params.id),
+            BCS.bcsSerializeUint64(params.amount),
+          ]
         )
       )
     );
@@ -176,7 +400,7 @@ export class TransactionBuilder {
    */
   public buildSetInteractiveTargetTransaction(
     params: SetInteractiveTargetParams
-  ): Executor<{ txId: string }> {
+  ) {
     /**
      * @dev Build transaction
      */
@@ -189,74 +413,6 @@ export class TransactionBuilder {
           [
             BCS.bcsSerializeStr(params.target),
             BCS.bcsSerializeBool(params.value),
-          ]
-        )
-      )
-    );
-  }
-
-  /**
-   * @notice Build create and deposit pocket
-   * @param createPocketParams
-   * @param depositParams
-   */
-  public buildCreatePocketAndDepositTransaction(
-    createPocketParams: CreatePocketParams,
-    depositParams: DepositParams
-  ): Executor<{ txId: string }> {
-    const baseCoin = new TypeTagStruct(
-      StructTag.fromString(createPocketParams.baseCoinType)
-    );
-    const targetCoin = new TypeTagStruct(
-      StructTag.fromString(createPocketParams.targetCoinType)
-    );
-
-    /**
-     * @dev Build transaction
-     */
-    return this.getTransactionalExecutor(
-      new TransactionPayloadEntryFunction(
-        EntryFunction.natural(
-          `${this.resourceAccount}::chef`,
-          "create_and_deposit_to_pocket",
-          [baseCoin, targetCoin],
-          [
-            BCS.bcsSerializeStr(createPocketParams.id),
-            BCS.bcsSerializeU64(BigInt(createPocketParams.amm)),
-            BCS.bcsSerializeU64(createPocketParams.startAt),
-            BCS.bcsSerializeU64(createPocketParams.frequency),
-            BCS.bcsSerializeU64(createPocketParams.batchVolume),
-            BCS.serializeVectorWithFunc(
-              [
-                createPocketParams.openPositionCondition[0],
-                createPocketParams.openPositionCondition[1],
-                createPocketParams.openPositionCondition[2],
-              ],
-              "serializeU64"
-            ),
-            BCS.serializeVectorWithFunc(
-              [
-                createPocketParams.takeProfitCondition[0],
-                createPocketParams.takeProfitCondition[1],
-              ],
-              "serializeU64"
-            ),
-
-            BCS.serializeVectorWithFunc(
-              [
-                createPocketParams.stopLossCondition[0],
-                createPocketParams.stopLossCondition[1],
-              ],
-              "serializeU64"
-            ),
-            BCS.serializeVectorWithFunc(
-              createPocketParams.autoClosedConditions.reduce<bigint[]>(
-                (accum, condition) => accum.concat(condition as bigint[]),
-                []
-              ),
-              "serializeU64"
-            ),
-            BCS.bcsSerializeU64(depositParams.amount),
           ]
         )
       )
@@ -286,10 +442,10 @@ export class TransactionBuilder {
           [baseCoin, targetCoin],
           [
             BCS.bcsSerializeStr(params.id),
-            BCS.bcsSerializeU64(BigInt(params.amm)),
-            BCS.bcsSerializeU64(params.startAt),
-            BCS.bcsSerializeU64(params.frequency),
-            BCS.bcsSerializeU64(params.batchVolume),
+            BCS.bcsSerializeUint64(BigInt(params.amm)),
+            BCS.bcsSerializeUint64(params.startAt),
+            BCS.bcsSerializeUint64(params.frequency),
+            BCS.bcsSerializeUint64(params.batchVolume),
             BCS.serializeVectorWithFunc(
               [
                 params.openPositionCondition[0],
@@ -336,9 +492,9 @@ export class TransactionBuilder {
           [],
           [
             BCS.bcsSerializeStr(params.id),
-            BCS.bcsSerializeU64(params.startAt),
-            BCS.bcsSerializeU64(params.frequency),
-            BCS.bcsSerializeU64(params.batchVolume),
+            BCS.bcsSerializeUint64(params.startAt),
+            BCS.bcsSerializeUint64(params.frequency),
+            BCS.bcsSerializeUint64(params.batchVolume),
             BCS.serializeVectorWithFunc(
               [
                 params.openPositionCondition[0],
@@ -507,6 +663,21 @@ export class TransactionBuilder {
       function: `${this.resourceAccount}::chef::get_delegated_vault_address`,
       arguments: [HexString.ensure(signer).toString()],
       type_arguments: [],
+    });
+  }
+
+  /**
+   * @notice build get quote for a pair
+   * @param params
+   */
+  public buildGetQuote(params: GetQuoteParams) {
+    /**
+     * @dev Build transaction
+     */
+    return this.getViewExecutor<[string]>({
+      function: `${this.resourceAccount}::chef::get_quote`,
+      arguments: [`${params.amountIn}`],
+      type_arguments: [params.baseCoinType, params.targetCoinType],
     });
   }
 }

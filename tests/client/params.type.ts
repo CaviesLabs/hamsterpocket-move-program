@@ -11,6 +11,13 @@ export interface DepositParams {
   amount: bigint;
 }
 
+export interface ExecTradingParams {
+  id: string;
+  baseCoinType: string;
+  targetCoinType: string;
+  minAmountOut: bigint;
+}
+
 export interface WithdrawParams {
   id: string;
   baseCoinType: string;
@@ -60,4 +67,10 @@ export interface CreateResourceAccountParams {
   seed: string;
   ownerAddress: string;
   amountToFund: bigint;
+}
+
+export interface GetQuoteParams {
+  baseCoinType: string;
+  targetCoinType: string;
+  amountIn: bigint;
 }
