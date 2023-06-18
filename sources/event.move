@@ -20,7 +20,7 @@ module hamsterpocket::event {
 
     struct UpdateTargetEvent has store, drop, copy {
         actor: address,
-        target: address,
+        target: String,
         value: bool,
         timestamp: u64
     }
@@ -48,7 +48,7 @@ module hamsterpocket::event {
         id: String,
         actor: address,
         amount: u64,
-        token_address: address,
+        coin_type: String,
         reason: String,
         timestamp: u64
     }
@@ -57,10 +57,10 @@ module hamsterpocket::event {
     struct UpdateWithdrawalStatsEvent has store, drop, copy {
         id: String,
         actor: address,
-        base_token_amount: u64,
-        base_token_address: address,
-        target_token_amount: u64,
-        target_token_address: address,
+        base_coin_amount: u64,
+        base_coin_type: String,
+        target_coin_amount: u64,
+        target_coin_type: String,
         reason: String,
         timestamp: u64
     }
@@ -69,10 +69,10 @@ module hamsterpocket::event {
     struct UpdateTradingStatsEvent has store, drop, copy {
         id: String,
         actor: address,
-        swapped_base_token_amount: u64,
-        base_token_address: address,
-        received_target_token_amount: u64,
-        target_token_address: address,
+        swapped_base_coin_amount: u64,
+        base_coin_type: String,
+        received_target_coin_amount: u64,
+        target_coin_type: String,
         reason: String,
         timestamp: u64
     }
@@ -81,10 +81,10 @@ module hamsterpocket::event {
     struct UpdateClosePositionEvent has store, drop, copy {
         id: String,
         actor: address,
-        swapped_target_token_amount: u64,
-        target_token_address: address,
-        received_base_token_amount: u64,
-        base_token_address: address,
+        swapped_target_coin_amount: u64,
+        target_coin_type: String,
+        received_base_coin_amount: u64,
+        base_coin_type: String,
         reason: String,
         timestamp: u64
     }
@@ -122,7 +122,7 @@ module hamsterpocket::event {
     // emit update allowed target event
     public(friend) fun emit_update_allowed_target_event(
         actor: address,
-        target: address,
+        target: String,
         value: bool
     ) acquires EventManager {
         let event_manager = borrow_global_mut<EventManager>(HAMSTERPOCKET);
@@ -225,7 +225,7 @@ module hamsterpocket::event {
         id: String,
         actor: address,
         amount: u64,
-        token_address: address,
+        coin_type: String,
         reason: String
     ) acquires EventManager {
         let event_manager = borrow_global_mut<EventManager>(HAMSTERPOCKET);
@@ -236,7 +236,7 @@ module hamsterpocket::event {
                 id,
                 actor,
                 amount,
-                token_address,
+                coin_type,
                 reason,
                 timestamp: timestamp::now_seconds()
             }
@@ -247,10 +247,10 @@ module hamsterpocket::event {
     public(friend) fun emit_update_withdrawal_stats_event(
         id: String,
         actor: address,
-        base_token_amount: u64,
-        base_token_address: address,
-        target_token_amount: u64,
-        target_token_address: address,
+        base_coin_amount: u64,
+        base_coin_type: String,
+        target_coin_amount: u64,
+        target_coin_type: String,
         reason: String,
     ) acquires EventManager {
         let event_manager = borrow_global_mut<EventManager>(HAMSTERPOCKET);
@@ -260,10 +260,10 @@ module hamsterpocket::event {
             UpdateWithdrawalStatsEvent {
                 id,
                 actor,
-                base_token_amount,
-                base_token_address,
-                target_token_amount,
-                target_token_address,
+                base_coin_amount,
+                base_coin_type,
+                target_coin_amount,
+                target_coin_type,
                 reason,
                 timestamp: timestamp::now_seconds()
             }
@@ -274,10 +274,10 @@ module hamsterpocket::event {
     public(friend) fun emit_update_trading_stats_event(
         id: String,
         actor: address,
-        swapped_base_token_amount: u64,
-        base_token_address: address,
-        received_target_token_amount: u64,
-        target_token_address: address,
+        swapped_base_coin_amount: u64,
+        base_coin_type: String,
+        received_target_coin_amount: u64,
+        target_coin_type: String,
         reason: String,
     ) acquires EventManager {
         let event_manager = borrow_global_mut<EventManager>(HAMSTERPOCKET);
@@ -287,10 +287,10 @@ module hamsterpocket::event {
             UpdateTradingStatsEvent {
                 id,
                 actor,
-                swapped_base_token_amount,
-                base_token_address,
-                received_target_token_amount,
-                target_token_address,
+                swapped_base_coin_amount,
+                base_coin_type,
+                received_target_coin_amount,
+                target_coin_type,
                 reason,
                 timestamp: timestamp::now_seconds()
             }
@@ -301,10 +301,10 @@ module hamsterpocket::event {
     public(friend) fun emit_update_close_position_stats(
         id: String,
         actor: address,
-        received_base_token_amount: u64,
-        base_token_address: address,
-        swapped_target_token_amount: u64,
-        target_token_address: address,
+        received_base_coin_amount: u64,
+        base_coin_type: String,
+        swapped_target_coin_amount: u64,
+        target_coin_type: String,
         reason: String,
     ) acquires EventManager {
         let event_manager = borrow_global_mut<EventManager>(HAMSTERPOCKET);
@@ -314,10 +314,10 @@ module hamsterpocket::event {
             UpdateClosePositionEvent {
                 id,
                 actor,
-                swapped_target_token_amount,
-                base_token_address,
-                received_base_token_amount,
-                target_token_address,
+                swapped_target_coin_amount,
+                base_coin_type,
+                received_base_coin_amount,
+                target_coin_type,
                 reason,
                 timestamp: timestamp::now_seconds()
             }

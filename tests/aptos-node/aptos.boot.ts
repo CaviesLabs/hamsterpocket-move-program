@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import { AptosAccount, AptosClient, CoinClient, HexString } from "aptos";
 
 export class AptosBootingManager {
@@ -12,9 +15,15 @@ export class AptosBootingManager {
 
   private managedAccounts: AptosAccount[] = [];
 
+  private alternativeFaucetAccount = new AptosAccount(
+    HexString.ensure(process.env.FAUCET_SECRET_KEY as string).toUint8Array()
+  );
+
   constructor(readonly handler = require("node:child_process")) {
     // initialize client first
     this.client = new AptosClient(AptosBootingManager.APTOS_NODE_URL);
+
+    console.log(process.env.FAUCET_SECRET_KEY);
   }
 
   /**
@@ -122,23 +131,33 @@ export class AptosBootingManager {
     this.managedAccounts.push(account);
 
     // funding account
-    await this.fundingWithFaucet(account.address().hex());
+    try {
+      // funding account
+      await this.fundingWithFaucet(account.address().hex());
+    } catch (e) {
+      // initialize coin client
+      const coinClient = new CoinClient(this.client);
+
+      // transfer
+      await coinClient.transfer(this.alternativeFaucetAccount, account, 1e8);
+    }
 
     return account;
   }
 
   /**
    * @dev Collect all fees
-   * @param target
    */
-  public async collectAllFaucet(target: HexString) {
+  public async collectAllFaucet() {
     await Promise.all(
       this.managedAccounts.map(async (account) => {
+        // initialize coin client
         const coinClient = new CoinClient(this.client);
 
+        // exec transfer
         return coinClient.transfer(
           account,
-          target,
+          this.alternativeFaucetAccount,
           (await coinClient.checkBalance(account)) - BigInt(1e7)
         );
       })

@@ -4,8 +4,8 @@ export interface PocketResponseType {
     closed_with: string;
     value: string;
   }[];
-  base_token_address: string;
-  base_token_balance: string;
+  base_coin_type: string;
+  base_coin_balance: string;
   batch_volume: string;
   executed_batch_amount: string;
   frequency: string;
@@ -27,8 +27,8 @@ export interface PocketResponseType {
     stopped_with: string;
     value: string;
   };
-  target_token_address: string;
-  target_token_balance: string;
+  target_coin_type: string;
+  target_coin_balance: string;
   total_closed_position_in_target_amount: string;
   total_deposited_base_amount: string;
   total_received_fund_in_base_amount: string;

@@ -39,11 +39,11 @@ export enum AutoCloseConditionClosedWith {
 
 export interface PocketEntity {
   id: string;
-  base_token_address: string;
-  target_token_address: string;
+  base_coin_type: string;
+  target_coin_type: string;
   owner: string;
-  base_token_balance: bigint;
-  target_token_balance: bigint;
+  base_coin_balance: bigint;
+  target_coin_balance: bigint;
   amm: AMM;
   status: PocketStatus;
   auto_close_conditions: {
@@ -82,11 +82,11 @@ export const transformPocketEntity = (
     amm: parseInt(entity.amm) as AMM,
     status: parseInt(entity.status) as PocketStatus,
     id: entity.id,
-    base_token_address: entity.base_token_address,
-    target_token_address: entity.target_token_address,
+    base_coin_type: entity.base_coin_type,
+    target_coin_type: entity.target_coin_type,
     owner: entity.owner,
-    base_token_balance: BigInt(entity.base_token_balance),
-    target_token_balance: BigInt(entity.target_token_balance),
+    base_coin_balance: BigInt(entity.base_coin_balance),
+    target_coin_balance: BigInt(entity.target_coin_balance),
     batch_volume: BigInt(entity.batch_volume),
     executed_batch_amount: BigInt(entity.executed_batch_amount),
     frequency: BigInt(entity.frequency),

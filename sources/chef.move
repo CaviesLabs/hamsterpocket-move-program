@@ -83,16 +83,16 @@ module hamsterpocket::chef {
         // now we make the swap
         let (
             owner,
-            base_token_address,
-            target_token_address,
+            base_coin_type,
+            target_coin_type,
             _,
             _,
-            target_token_balance,
+            target_coin_balance,
             _
         ) = pocket::get_trading_info(pocket_id);
         let (amount_in, amount_out) = vault::make_pcs_swap<TargetCoin, BaseCoin>(
             owner,
-            target_token_balance,
+            target_coin_balance,
             min_amount_out
         );
 
@@ -126,9 +126,9 @@ module hamsterpocket::chef {
             pocket_id,
             address_of(signer),
             amount_out,
-            base_token_address,
+            base_coin_type,
             amount_in,
-            target_token_address,
+            target_coin_type,
             reason
         );
 
@@ -168,8 +168,8 @@ module hamsterpocket::chef {
         // now we make dca swap
         let (
             owner,
-            base_token_address,
-            target_token_address,
+            base_coin_type,
+            target_coin_type,
             batch_volume,
             _,
             _,
@@ -195,9 +195,9 @@ module hamsterpocket::chef {
             pocket_id,
             address_of(signer),
             amount_in,
-            base_token_address,
+            base_coin_type,
             amount_out,
-            target_token_address,
+            target_coin_type,
             string::utf8(b"OPERATOR_MADE_SWAP")
         );
 
@@ -235,11 +235,9 @@ module hamsterpocket::chef {
     }
 
     // create and deposit pocket
-    public entry fun create_and_deposit_to_pocket<BaseCoin>(
+    public entry fun create_and_deposit_to_pocket<BaseCoin, TargetCoin>(
         signer: &signer,
         id: vector<u8>,
-        base_token_address: vector<u8>,
-        target_token_address: vector<u8>,
         amm: u64,
         start_at: u64,
         frequency: u64,
@@ -250,11 +248,9 @@ module hamsterpocket::chef {
         auto_closed_conditions: vector<u64>,
         deposit_amount: u64,
     ) {
-        create_pocket(
+        create_pocket<BaseCoin, TargetCoin>(
             signer,
             id,
-            base_token_address,
-            target_token_address,
             amm,
             start_at,
             frequency,
@@ -282,16 +278,16 @@ module hamsterpocket::chef {
         // now we make the swap
         let (
             owner,
-            base_token_address,
-            target_token_address,
+            base_coin_type,
+            target_coin_type,
             _,
             _,
-            target_token_balance,
+            target_coin_balance,
             _
         ) = pocket::get_trading_info(pocket_id);
         let (amount_in, amount_out) = vault::make_pcs_swap<TargetCoin, BaseCoin>(
             owner,
-            target_token_balance,
+            target_coin_balance,
             min_amount_out
         );
 
@@ -303,9 +299,9 @@ module hamsterpocket::chef {
             pocket_id,
             address_of(signer),
             amount_out,
-            base_token_address,
+            base_coin_type,
             amount_in,
-            target_token_address,
+            target_coin_type,
             string::utf8(b"USER_CLOSED_POSITION")
         );
 
@@ -322,11 +318,9 @@ module hamsterpocket::chef {
     }
 
     // update pocket
-    public entry fun create_pocket(
+    public entry fun create_pocket<BaseCoin, TargetCoin>(
         signer: &signer,
         id: vector<u8>,
-        base_token_address: vector<u8>,
-        target_token_address: vector<u8>,
         amm: u64,
         start_at: u64,
         frequency: u64,
@@ -339,11 +333,9 @@ module hamsterpocket::chef {
         let pocket_id = string::utf8(id);
 
         // create pocket
-        pocket::create_pocket(
+        pocket::create_pocket<BaseCoin, TargetCoin>(
             signer,
             pocket_id,
-            to_address(base_token_address),
-            to_address(target_token_address),
             amm,
             start_at,
             frequency,
@@ -404,7 +396,7 @@ module hamsterpocket::chef {
 
         let (
             _,
-            base_token_address,
+            base_coin_type,
             _,
             _,
             _,
@@ -429,7 +421,7 @@ module hamsterpocket::chef {
             pocket_id,
             address_of(signer),
             amount,
-            base_token_address,
+            base_coin_type,
             string::utf8(b"USER_DEPOSITED_ASSET")
         );
     }
@@ -444,24 +436,24 @@ module hamsterpocket::chef {
         // extract trading info
         let (
             _,
-            base_token_address,
-            target_token_address,
+            base_coin_type,
+            target_coin_type,
             _,
-            base_token_balance,
-            target_token_balance,
+            base_coin_balance,
+            target_coin_balance,
             _
         ) = pocket::get_trading_info(pocket_id);
 
         // withdraw from vault
         vault::withdraw<BaseCoin>(
             signer,
-            base_token_balance
+            base_coin_balance
         );
 
         // withdraw from vault
         vault::withdraw<TargetCoin>(
             signer,
-            target_token_balance
+            target_coin_balance
         );
 
         // update deposit stats
@@ -471,10 +463,10 @@ module hamsterpocket::chef {
         event::emit_update_withdrawal_stats_event(
             pocket_id,
             address_of(signer),
-            base_token_balance,
-            base_token_address,
-            target_token_balance,
-            target_token_address,
+            base_coin_balance,
+            base_coin_type,
+            target_coin_balance,
+            target_coin_type,
             string::utf8(b"USER_WITHDREW_ASSETS")
         );
     }
@@ -550,17 +542,17 @@ module hamsterpocket::chef {
     }
 
     // set interactive target, only available for admin
-    public entry fun set_interactive_target(signer: &signer, address: vector<u8>, value: bool) {
+    public entry fun set_interactive_target(signer: &signer, target: vector<u8>, value: bool) {
         platform::is_admin(address_of(signer), true);
         platform::set_interactive_target(
-            to_address(address),
+            string::utf8(target),
             value
         );
 
         // emit event
         event::emit_update_allowed_target_event(
             address_of(signer),
-            to_address(address),
+            string::utf8(target),
             value
         );
     }
@@ -585,9 +577,9 @@ module hamsterpocket::chef {
 
     // check for allowed target
     #[view]
-    public fun is_allowed_target(address: vector<u8>): bool {
+    public fun is_allowed_target(target: vector<u8>): bool {
         return platform::is_allowed_target(
-            to_address(address),
+            string::utf8(target),
             false
         )
     }

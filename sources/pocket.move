@@ -107,8 +107,8 @@ module hamsterpocket::pocket {
         owner: address,
 
         // trading info fields
-        base_token_address: address,
-        target_token_address: address,
+        base_coin_type: String,
+        target_coin_type: String,
         amm: u64,
 
         // investment time period configuration fields
@@ -131,8 +131,8 @@ module hamsterpocket::pocket {
         total_closed_position_in_target_amount: u64,
         total_received_fund_in_base_amount: u64,
 
-        base_token_balance: u64,
-        target_token_balance: u64,
+        base_coin_balance: u64,
+        target_coin_balance: u64,
 
         executed_batch_amount: u64,
         next_scheduled_execution_at: u64
@@ -161,11 +161,9 @@ module hamsterpocket::pocket {
     }
 
     // create pocket
-    public(friend) fun create_pocket(
+    public(friend) fun create_pocket<BaseCoin, TargetCoin>(
         signer: &signer,
         id: String,
-        base_token_address: address,
-        target_token_address: address,
         amm: u64,
         start_at: u64,
         frequency: u64,
@@ -180,8 +178,8 @@ module hamsterpocket::pocket {
         let pocket = &mut Pocket {
             id,
             owner: address_of(signer),
-            base_token_address,
-            target_token_address,
+            base_coin_type: type_info::type_name<BaseCoin>(),
+            target_coin_type: type_info::type_name<TargetCoin>(),
             amm, // currently we only support PCS as default
             start_at,
             next_scheduled_execution_at: start_at,
@@ -208,8 +206,8 @@ module hamsterpocket::pocket {
             total_received_target_amount: 0,
             total_closed_position_in_target_amount: 0,
             total_received_fund_in_base_amount: 0,
-            base_token_balance: 0,
-            target_token_balance: 0,
+            base_coin_balance: 0,
+            target_coin_balance: 0,
             executed_batch_amount: 0,
         };
 
@@ -316,8 +314,8 @@ module hamsterpocket::pocket {
     ) acquires PocketStore, ResourceAccountStore {
         let pocket = &mut get_pocket(id);
 
-        pocket.base_token_balance = 0;
-        pocket.target_token_balance = 0;
+        pocket.base_coin_balance = 0;
+        pocket.target_coin_balance = 0;
         pocket.status = STATUS_WITHDRAWN;
 
         // commit data changes
@@ -332,7 +330,7 @@ module hamsterpocket::pocket {
         let pocket = &mut get_pocket(id);
 
         pocket.total_deposited_base_amount = amount;
-        pocket.base_token_balance = pocket.base_token_balance + amount;
+        pocket.base_coin_balance = pocket.base_coin_balance + amount;
 
         // commit data changes
         commit_pocket_data(id, *pocket);
@@ -341,18 +339,18 @@ module hamsterpocket::pocket {
     // update close position stats
     public(friend) fun update_close_position_stats(
         id: String,
-        swapped_target_token_amount: u64,
-        received_base_token_amount: u64,
+        swapped_target_coin_amount: u64,
+        received_base_coin_amount: u64,
     ) acquires PocketStore, ResourceAccountStore {
         let pocket = &mut get_pocket(id);
 
         // update stats
-        pocket.total_closed_position_in_target_amount = pocket.total_closed_position_in_target_amount + swapped_target_token_amount;
-        pocket.total_received_fund_in_base_amount = pocket.total_received_fund_in_base_amount + received_base_token_amount;
+        pocket.total_closed_position_in_target_amount = pocket.total_closed_position_in_target_amount + swapped_target_coin_amount;
+        pocket.total_received_fund_in_base_amount = pocket.total_received_fund_in_base_amount + received_base_coin_amount;
 
         // update balance
-        pocket.base_token_balance = pocket.base_token_balance + received_base_token_amount;
-        pocket.target_token_balance = pocket.target_token_balance - swapped_target_token_amount;
+        pocket.base_coin_balance = pocket.base_coin_balance + received_base_coin_amount;
+        pocket.target_coin_balance = pocket.target_coin_balance - swapped_target_coin_amount;
 
         // commit data changes
         commit_pocket_data(id, *pocket);
@@ -361,8 +359,8 @@ module hamsterpocket::pocket {
     // update trading stats
     public(friend) fun update_trading_stats(
         id: String,
-        swapped_base_token_amount: u64,
-        received_target_token_amount: u64,
+        swapped_base_coin_amount: u64,
+        received_target_coin_amount: u64,
     ) acquires PocketStore, ResourceAccountStore {
         let pocket = &mut get_pocket(id);
 
@@ -371,10 +369,10 @@ module hamsterpocket::pocket {
         pocket.executed_batch_amount = pocket.executed_batch_amount + 1;
 
         // compute trading status
-        pocket.total_swapped_base_amount = pocket.total_swapped_base_amount + swapped_base_token_amount;
-        pocket.total_received_target_amount = pocket.total_received_target_amount + received_target_token_amount;
-        pocket.base_token_balance = pocket.base_token_balance - swapped_base_token_amount;
-        pocket.target_token_balance = pocket.target_token_balance + received_target_token_amount;
+        pocket.total_swapped_base_amount = pocket.total_swapped_base_amount + swapped_base_coin_amount;
+        pocket.total_received_target_amount = pocket.total_received_target_amount + received_target_coin_amount;
+        pocket.base_coin_balance = pocket.base_coin_balance - swapped_base_coin_amount;
+        pocket.target_coin_balance = pocket.target_coin_balance + received_target_coin_amount;
 
         // commit changes
         commit_pocket_data(id, *pocket);
@@ -539,15 +537,14 @@ module hamsterpocket::pocket {
     ): bool acquires PocketStore, ResourceAccountStore {
         let pocket = &get_pocket(pocket_id);
 
-        let type_info_x = type_info::type_of<BaseCoin>();
-        let computed_base_token_address = type_info::account_address(&type_info_x);
+        let type_info_x = type_info::type_name<BaseCoin>();
 
         let result = is_owner_of(pocket, signer) &&
-            pocket.base_token_address == computed_base_token_address &&
+            pocket.base_coin_type == type_info_x &&
             pocket.status != STATUS_CLOSED &&
             pocket.status != STATUS_WITHDRAWN &&
             platform::is_allowed_target(
-                computed_base_token_address,
+                type_info_x,
                 raise_error
             );
 
@@ -566,17 +563,14 @@ module hamsterpocket::pocket {
     ): bool acquires PocketStore, ResourceAccountStore {
         let pocket = &get_pocket(pocket_id);
 
-        let type_info_x = type_info::type_of<BaseCoin>();
-        let computed_base_token_address = type_info::account_address(&type_info_x);
-
-        let type_info_y = type_info::type_of<TargetCoin>();
-        let computed_target_token_address = type_info::account_address(&type_info_y);
+        let type_info_x = type_info::type_name<BaseCoin>();
+        let type_info_y = type_info::type_name<TargetCoin>();
 
         // enabled check for authorized Coin type
         let result = is_owner_of(pocket, signer) &&
             pocket.status == STATUS_CLOSED &&
-            pocket.base_token_address == computed_base_token_address &&
-            pocket.target_token_address == computed_target_token_address;
+            pocket.base_coin_type == type_info_x &&
+            pocket.target_coin_type == type_info_y;
 
         if (raise_error) {
             assert!(result, error::invalid_state(NOT_ABLE_TO_WITHDRAW));
@@ -592,18 +586,15 @@ module hamsterpocket::pocket {
     ): bool acquires PocketStore, ResourceAccountStore {
         let pocket = &get_pocket(pocket_id);
 
-        let type_info_x = type_info::type_of<BaseCoin>();
-        let computed_base_token_address = type_info::account_address(&type_info_x);
-
-        let type_info_y = type_info::type_of<TargetCoin>();
-        let computed_target_token_address = type_info::account_address(&type_info_y);
+        let type_info_x = type_info::type_name<BaseCoin>();
+        let type_info_y = type_info::type_name<TargetCoin>();
 
         let result = pocket.status == STATUS_ACTIVE &&
-            pocket.base_token_balance >= pocket.batch_volume &&
+            pocket.base_coin_balance >= pocket.batch_volume &&
             pocket.start_at <= timestamp::now_seconds() &&
             pocket.next_scheduled_execution_at <= timestamp::now_seconds() &&
-            pocket.base_token_address == computed_base_token_address &&
-            pocket.target_token_address == computed_target_token_address;
+            pocket.base_coin_type == type_info_x &&
+            pocket.target_coin_type == type_info_y;
 
         if (raise_error) {
             assert!(result, error::invalid_state(NOT_READY_TO_SWAP));
@@ -619,17 +610,14 @@ module hamsterpocket::pocket {
     ): bool acquires PocketStore, ResourceAccountStore {
         let pocket = &get_pocket(pocket_id);
 
-        let type_info_x = type_info::type_of<BaseCoin>();
-        let computed_base_token_address = type_info::account_address(&type_info_x);
-
-        let type_info_y = type_info::type_of<TargetCoin>();
-        let computed_target_token_address = type_info::account_address(&type_info_y);
+        let type_info_x = type_info::type_name<BaseCoin>();
+        let type_info_y = type_info::type_name<TargetCoin>();
 
         let result = pocket.status != STATUS_WITHDRAWN &&
-            pocket.target_token_balance > 0 &&
+            pocket.target_coin_balance > 0 &&
             pocket.start_at <= timestamp::now_seconds() &&
-            pocket.base_token_address == computed_base_token_address &&
-            pocket.target_token_address == computed_target_token_address;
+            pocket.base_coin_type == type_info_x &&
+            pocket.target_coin_type == type_info_y;
 
         if (raise_error) {
             assert!(result, error::invalid_state(NOT_READY_TO_CLOSE_POSITION));
@@ -641,15 +629,15 @@ module hamsterpocket::pocket {
     // get trading info of a pocket
     public(friend) fun get_trading_info(
         pocket_id: String
-    ): (address, address, address, u64, u64, u64, u64) acquires PocketStore, ResourceAccountStore {
+    ): (address, String, String, u64, u64, u64, u64) acquires PocketStore, ResourceAccountStore {
         let pocket = &get_pocket(pocket_id);
         return (
             pocket.owner,
-            pocket.base_token_address,
-            pocket.target_token_address,
+            pocket.base_coin_type,
+            pocket.target_coin_type,
             pocket.batch_volume,
-            pocket.base_token_balance,
-            pocket.target_token_balance,
+            pocket.base_coin_balance,
+            pocket.target_coin_balance,
             pocket.status
         )
     }
@@ -684,18 +672,18 @@ module hamsterpocket::pocket {
     // check whether the pocket should open position
     public(friend) fun should_open_position(
         pocket_id: String,
-        swapped_base_token_amount: u64,
-        received_target_token_amount: u64
+        swapped_base_coin_amount: u64,
+        received_target_coin_amount: u64
     ): bool acquires PocketStore, ResourceAccountStore {
         let pocket = &get_pocket(pocket_id);
         let condition = &pocket.open_position_condition;
 
         let expected_amount_out = u256::div(
             u256::mul(
-                u256::from_u64(received_target_token_amount),
+                u256::from_u64(received_target_coin_amount),
                 u256::from_u64(pocket.batch_volume)
             ),
-            u256::from_u64(swapped_base_token_amount)
+            u256::from_u64(swapped_base_coin_amount)
         );
 
         if (condition.operator == OPERATOR_LT) {
@@ -736,10 +724,10 @@ module hamsterpocket::pocket {
     }
 
     // check whether a pocket should be stop loss
-    public(friend) fun should_stop_loss<BaseToken, TargetToken>(
+    public(friend) fun should_stop_loss<BaseCoin, TargetCoin>(
         pocket_id: String,
-        swapped_target_token_amount: u64,
-        received_base_token_amount: u64
+        swapped_target_coin_amount: u64,
+        received_base_coin_amount: u64
     ): bool acquires PocketStore, ResourceAccountStore {
         let pocket = &get_pocket(pocket_id);
         let stop_loss_condition = &pocket.stop_loss_condition;
@@ -749,28 +737,28 @@ module hamsterpocket::pocket {
             return false
         };
 
-        let target_token_decimals = coin::decimals<TargetToken>();
+        let target_coin_decimals = coin::decimals<TargetCoin>();
         let expected_amount_out = u256::div(
             u256::mul(
-                u256::from_u64(received_base_token_amount),
+                u256::from_u64(received_base_coin_amount),
                 u256::from_u128(
                     math::pow(
                         10,
-                        (target_token_decimals as u128)
+                        (target_coin_decimals as u128)
                     )
                 )
             ),
-            u256::from_u64(swapped_target_token_amount)
+            u256::from_u64(swapped_target_coin_amount)
         );
 
         return u256::as_u64(expected_amount_out) <= stop_loss_condition.value
     }
 
     // check whether a pocket should take profit
-    public(friend) fun should_take_profit<BaseToken, TargetToken>(
+    public(friend) fun should_take_profit<BaseCoin, TargetCoin>(
         pocket_id: String,
-        swapped_target_token_amount: u64,
-        received_base_token_amount: u64
+        swapped_target_coin_amount: u64,
+        received_base_coin_amount: u64
     ): bool acquires PocketStore, ResourceAccountStore {
         let pocket = &get_pocket(pocket_id);
         let condition = &pocket.take_profit_condition;
@@ -780,18 +768,18 @@ module hamsterpocket::pocket {
             return false
         };
 
-        let target_token_decimals = coin::decimals<TargetToken>();
+        let target_coin_decimals = coin::decimals<TargetCoin>();
         let expected_amount_out = u256::div(
             u256::mul(
-                u256::from_u64(received_base_token_amount),
+                u256::from_u64(received_base_coin_amount),
                 u256::from_u128(
                     math::pow(
                         10,
-                        (target_token_decimals as u128)
+                        (target_coin_decimals as u128)
                     )
                 )
             ),
-            u256::from_u64(swapped_target_token_amount)
+            u256::from_u64(swapped_target_coin_amount)
         );
 
         return u256::as_u64(expected_amount_out) >= condition.value
@@ -911,15 +899,15 @@ module hamsterpocket::pocket {
 
         assert!(pocket.owner != @0x0, error::invalid_state(ZERO_ADDRESS));
 
-        assert!(pocket.base_token_address != @0x0, error::invalid_state(ZERO_ADDRESS));
+        assert!(pocket.base_coin_type != string::utf8(b""), error::invalid_state(ZERO_ADDRESS));
         assert!(
-            platform::is_allowed_target(pocket.base_token_address, false),
+            platform::is_allowed_target(pocket.base_coin_type, false),
             error::permission_denied(INVALID_TARGET)
         );
 
-        assert!(pocket.target_token_address != @0x0, error::invalid_state(ZERO_ADDRESS));
+        assert!(pocket.target_coin_type != string::utf8(b""), error::invalid_state(ZERO_ADDRESS));
         assert!(
-            platform::is_allowed_target(pocket.target_token_address, false),
+            platform::is_allowed_target(pocket.target_coin_type, false),
             error::permission_denied(INVALID_TARGET)
         );
 

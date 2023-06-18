@@ -24,8 +24,8 @@ describe("vault", function () {
   const pocketData: CreatePocketParams = {
     id: "test-vault-pocket-data",
     amm: AMM.PCS,
-    baseTokenAddress: APTOS_GENESIS_ADDRESS,
-    targetTokenAddress: APTOS_GENESIS_ADDRESS,
+    baseCoinType: "0x1::aptos_coin::AptosCoin",
+    targetCoinType: "0x1::aptos_coin::AptosCoin",
     batchVolume: BigInt(1000),
     frequency: BigInt(3600),
     startAt: BigInt(parseInt((new Date().getTime() / 1000).toString())),
@@ -72,7 +72,7 @@ describe("vault", function () {
      */
     await adminTxBuilder
       .buildSetInteractiveTargetTransaction({
-        target: APTOS_GENESIS_ADDRESS,
+        target: "0x1::aptos_coin::AptosCoin",
         value: true,
       })
       .execute();
@@ -112,7 +112,7 @@ describe("vault", function () {
      */
     await txBuilder
       .buildDepositTransaction({
-        tokenAddress: APTOS_GENESIS_ADDRESS,
+        coinType: "0x1::aptos_coin::AptosCoin",
         amount: BigInt(10000),
         id: pocketData.id,
       })
@@ -145,8 +145,8 @@ describe("vault", function () {
     const pocket = transformPocketEntity(untransformedPocket);
 
     expect(pocket.status).toEqual(PocketStatus.STATUS_ACTIVE);
-    expect(pocket.base_token_balance).toEqual(BigInt(10000));
-    expect(pocket.target_token_balance).toEqual(BigInt(0));
+    expect(pocket.base_coin_balance).toEqual(BigInt(10000));
+    expect(pocket.target_coin_balance).toEqual(BigInt(0));
   });
 
   it("[vault] should: can withdraw token", async () => {
@@ -181,8 +181,8 @@ describe("vault", function () {
      */
     await txBuilder
       .buildWithdrawTransaction({
-        baseTokenAddress: APTOS_GENESIS_ADDRESS,
-        targetTokenAddress: APTOS_GENESIS_ADDRESS,
+        baseCoinType: "0x1::aptos_coin::AptosCoin",
+        targetCoinType: "0x1::aptos_coin::AptosCoin",
         id: pocketData.id,
       })
       .execute();
@@ -204,7 +204,7 @@ describe("vault", function () {
     const pocket = transformPocketEntity(untransformedPocket);
 
     expect(pocket.status).toEqual(PocketStatus.STATUS_WITHDRAWN);
-    expect(pocket.base_token_balance).toEqual(BigInt(0));
-    expect(pocket.target_token_balance).toEqual(BigInt(0));
+    expect(pocket.base_coin_balance).toEqual(BigInt(0));
+    expect(pocket.target_coin_balance).toEqual(BigInt(0));
   });
 });

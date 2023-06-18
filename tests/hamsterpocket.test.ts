@@ -1,4 +1,4 @@
-import { AptosAccount, HexString } from "aptos";
+import { AptosAccount } from "aptos";
 
 import { AptosBootingManager } from "./aptos-node/aptos.boot";
 import { RESOURCE_ACCOUNT_SEED } from "./client/libs/constants";
@@ -46,11 +46,7 @@ describe("hamsterpocket", function () {
   });
 
   afterAll(async () => {
-    await aptosLocalNodeProcess.collectAllFaucet(
-      new HexString(
-        "0x6367b44ccbf7e98040db96576ff1e03b4ee7e3401da05fea848f826f16df47b0"
-      )
-    );
+    await aptosLocalNodeProcess.collectAllFaucet();
   });
 
   require("./specs/account.spec");

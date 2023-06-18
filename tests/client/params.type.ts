@@ -7,20 +7,20 @@ import {
 
 export interface DepositParams {
   id: string;
-  tokenAddress: string;
+  coinType: string;
   amount: bigint;
 }
 
 export interface WithdrawParams {
   id: string;
-  baseTokenAddress: string;
-  targetTokenAddress: string;
+  baseCoinType: string;
+  targetCoinType: string;
 }
 
 export interface CreatePocketParams {
   id: string;
-  baseTokenAddress: string;
-  targetTokenAddress: string;
+  baseCoinType: string;
+  targetCoinType: string;
   amm: AMM;
   startAt: bigint;
   frequency: bigint;

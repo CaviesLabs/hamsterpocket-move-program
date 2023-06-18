@@ -5,6 +5,7 @@ module hamsterpocket::platform {
 
     use std::error;
     use std::signer::address_of;
+    use std::string::String;
 
     friend hamsterpocket::chef;
     friend hamsterpocket::pocket;
@@ -20,7 +21,7 @@ module hamsterpocket::platform {
     // here we define the platform config
     struct PlatformConfig has key {
         deployer_capibility: account::SignerCapability,
-        allowed_interactive_targets: table_with_length::TableWithLength<address, bool>,
+        allowed_interactive_targets: table_with_length::TableWithLength<String, bool>,
         allowed_operators: table_with_length::TableWithLength<address, bool>,
         allowed_admins: table_with_length::TableWithLength<address, bool>,
     }
@@ -33,7 +34,7 @@ module hamsterpocket::platform {
         move_to(hamsterpocket_signer, PlatformConfig {
             deployer_capibility: signer_cap,
             allowed_operators: table_with_length::new<address, bool>(),
-            allowed_interactive_targets: table_with_length::new<address, bool>(),
+            allowed_interactive_targets: table_with_length::new<String, bool>(),
             allowed_admins: table_with_length::new<address, bool>(),
         });
 
@@ -61,11 +62,11 @@ module hamsterpocket::platform {
     }
 
     // enable interactive target
-    public(friend) fun set_interactive_target(target: address, enabled: bool) acquires PlatformConfig {
+    public(friend) fun set_interactive_target(target: String, enabled: bool) acquires PlatformConfig {
         let config = borrow_global_mut<PlatformConfig>(HAMSTERPOCKET);
         let allowed_interactive_targets = &mut config.allowed_interactive_targets;
 
-        table_with_length::upsert<address, bool>(allowed_interactive_targets, target, enabled);
+        table_with_length::upsert<String, bool>(allowed_interactive_targets, target, enabled);
     }
 
     // enable operators
@@ -114,13 +115,13 @@ module hamsterpocket::platform {
     }
 
     // check whether an address is allowed to be interacted
-    public(friend) fun is_allowed_target(target: address, raise_error: bool): bool acquires PlatformConfig {
+    public(friend) fun is_allowed_target(target: String, raise_error: bool): bool acquires PlatformConfig {
         let config = borrow_global<PlatformConfig>(HAMSTERPOCKET);
 
         let result = false;
 
         if (table_with_length::contains(&config.allowed_interactive_targets, target)) {
-            result = *table_with_length::borrow<address, bool>(&config.allowed_interactive_targets, target);
+            result = *table_with_length::borrow<String, bool>(&config.allowed_interactive_targets, target);
         };
 
         if (raise_error) {

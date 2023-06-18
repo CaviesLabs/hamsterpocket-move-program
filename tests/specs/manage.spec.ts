@@ -20,10 +20,8 @@ describe("manage_pocket", function () {
   const pocketData: CreatePocketParams = {
     id: "testpocketdata",
     amm: AMM.PCS,
-    baseTokenAddress:
-      "0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa",
-    targetTokenAddress:
-      "0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa",
+    baseCoinType: "0x1::aptos_coin::AptosCoin",
+    targetCoinType: "0x1::aptos_coin::AptosCoin",
     batchVolume: BigInt(1000),
     frequency: BigInt(3600),
     startAt: BigInt(parseInt((new Date().getTime() / 1000).toString())),
@@ -69,8 +67,7 @@ describe("manage_pocket", function () {
      */
     await adminTxBuilder
       .buildSetInteractiveTargetTransaction({
-        target:
-          "0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa",
+        target: "0x1::aptos_coin::AptosCoin",
         value: true,
       })
       .execute();

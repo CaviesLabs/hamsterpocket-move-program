@@ -125,7 +125,7 @@ export class TransactionBuilder {
    */
   public buildDepositTransaction(params: DepositParams) {
     const tokenTag = new TypeTagStruct(
-      StructTag.fromString(`${params.tokenAddress}::aptos_coin::AptosCoin`)
+      StructTag.fromString(`${params.coinType}`)
     );
 
     /**
@@ -148,13 +148,11 @@ export class TransactionBuilder {
    * @param params
    */
   public buildWithdrawTransaction(params: WithdrawParams) {
-    const baseToken = new TypeTagStruct(
-      StructTag.fromString(`${params.baseTokenAddress}::aptos_coin::AptosCoin`)
+    const baseCoin = new TypeTagStruct(
+      StructTag.fromString(`${params.baseCoinType}`)
     );
-    const targetToken = new TypeTagStruct(
-      StructTag.fromString(
-        `${params.targetTokenAddress}::aptos_coin::AptosCoin`
-      )
+    const targetCoin = new TypeTagStruct(
+      StructTag.fromString(`${params.targetCoinType}`)
     );
 
     /**
@@ -165,7 +163,7 @@ export class TransactionBuilder {
         EntryFunction.natural(
           `${this.resourceAccount}::chef`,
           "withdraw",
-          [baseToken, targetToken],
+          [baseCoin, targetCoin],
           [BCS.bcsSerializeStr(params.id)]
         )
       )
@@ -189,8 +187,76 @@ export class TransactionBuilder {
           "set_interactive_target",
           [],
           [
-            BCS.bcsSerializeBytes(new HexString(params.target).toUint8Array()),
+            BCS.bcsSerializeStr(params.target),
             BCS.bcsSerializeBool(params.value),
+          ]
+        )
+      )
+    );
+  }
+
+  /**
+   * @notice Build create and deposit pocket
+   * @param createPocketParams
+   * @param depositParams
+   */
+  public buildCreatePocketAndDepositTransaction(
+    createPocketParams: CreatePocketParams,
+    depositParams: DepositParams
+  ): Executor<{ txId: string }> {
+    const baseCoin = new TypeTagStruct(
+      StructTag.fromString(createPocketParams.baseCoinType)
+    );
+    const targetCoin = new TypeTagStruct(
+      StructTag.fromString(createPocketParams.targetCoinType)
+    );
+
+    /**
+     * @dev Build transaction
+     */
+    return this.getTransactionalExecutor(
+      new TransactionPayloadEntryFunction(
+        EntryFunction.natural(
+          `${this.resourceAccount}::chef`,
+          "create_and_deposit_to_pocket",
+          [baseCoin, targetCoin],
+          [
+            BCS.bcsSerializeStr(createPocketParams.id),
+            BCS.bcsSerializeU64(BigInt(createPocketParams.amm)),
+            BCS.bcsSerializeU64(createPocketParams.startAt),
+            BCS.bcsSerializeU64(createPocketParams.frequency),
+            BCS.bcsSerializeU64(createPocketParams.batchVolume),
+            BCS.serializeVectorWithFunc(
+              [
+                createPocketParams.openPositionCondition[0],
+                createPocketParams.openPositionCondition[1],
+                createPocketParams.openPositionCondition[2],
+              ],
+              "serializeU64"
+            ),
+            BCS.serializeVectorWithFunc(
+              [
+                createPocketParams.takeProfitCondition[0],
+                createPocketParams.takeProfitCondition[1],
+              ],
+              "serializeU64"
+            ),
+
+            BCS.serializeVectorWithFunc(
+              [
+                createPocketParams.stopLossCondition[0],
+                createPocketParams.stopLossCondition[1],
+              ],
+              "serializeU64"
+            ),
+            BCS.serializeVectorWithFunc(
+              createPocketParams.autoClosedConditions.reduce<bigint[]>(
+                (accum, condition) => accum.concat(condition as bigint[]),
+                []
+              ),
+              "serializeU64"
+            ),
+            BCS.bcsSerializeU64(depositParams.amount),
           ]
         )
       )
@@ -202,6 +268,13 @@ export class TransactionBuilder {
    * @param params
    */
   public buildCreatePocketTransaction(params: CreatePocketParams) {
+    const baseCoin = new TypeTagStruct(
+      StructTag.fromString(params.baseCoinType)
+    );
+    const targetCoin = new TypeTagStruct(
+      StructTag.fromString(params.targetCoinType)
+    );
+
     /**
      * @dev Build transaction
      */
@@ -210,15 +283,9 @@ export class TransactionBuilder {
         EntryFunction.natural(
           `${this.resourceAccount}::chef`,
           "create_pocket",
-          [],
+          [baseCoin, targetCoin],
           [
             BCS.bcsSerializeStr(params.id),
-            BCS.bcsSerializeBytes(
-              HexString.ensure(params.baseTokenAddress).toUint8Array()
-            ),
-            BCS.bcsSerializeBytes(
-              HexString.ensure(params.targetTokenAddress).toUint8Array()
-            ),
             BCS.bcsSerializeU64(BigInt(params.amm)),
             BCS.bcsSerializeU64(params.startAt),
             BCS.bcsSerializeU64(params.frequency),
@@ -398,15 +465,17 @@ export class TransactionBuilder {
 
   /**
    * @notice Build check for allowed target
-   * @param address
+   * @param target
    */
-  public buildCheckForAllowedTarget(address: string) {
+  public buildCheckForAllowedTarget(target: string) {
     /**
      * @dev Build transaction
      */
     return this.getViewExecutor<[boolean]>({
       function: `${this.resourceAccount}::chef::is_allowed_target`,
-      arguments: [HexString.ensure(address).toString()],
+      arguments: [
+        HexString.fromUint8Array(new TextEncoder().encode(target)).toString(),
+      ],
       type_arguments: [],
     });
   }
