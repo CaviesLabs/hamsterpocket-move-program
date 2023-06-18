@@ -217,7 +217,7 @@ module hamsterpocket::chef {
 
         // check if autoclose condition reaches
         if (pocket::should_auto_close(pocket_id)) {
-            let status = pocket::mark_as_closed(pocket_id, signer);
+            let status = pocket::mark_as_closed(pocket_id);
 
             // emit event
             event::emit_update_pocket_status_event(
@@ -395,11 +395,10 @@ module hamsterpocket::chef {
         let pocket_id = string::utf8(id);
 
         // make sure the pocket is able to update
-        pocket::is_able_to_update(signer,pocket_id,true);
+        pocket::is_able_to_update(signer, pocket_id, true);
 
         // now we update pocket
         pocket::update_pocket(
-            signer,
             pocket_id,
             start_at,
             frequency,
@@ -510,10 +509,7 @@ module hamsterpocket::chef {
         pocket::is_able_to_pause(signer, pocket_id, true);
 
         // mark as paused
-        let status = pocket::mark_as_paused(
-            pocket_id,
-            signer
-        );
+        let status = pocket::mark_as_paused(pocket_id);
 
         // emit event
         event::emit_update_pocket_status_event(
@@ -532,10 +528,7 @@ module hamsterpocket::chef {
         pocket::is_able_to_restart(signer, pocket_id, true);
 
         // mark as active
-        let status = pocket::mark_as_active(
-            pocket_id,
-            signer
-        );
+        let status = pocket::mark_as_active(pocket_id);
 
         // emit event
         event::emit_update_pocket_status_event(
@@ -554,10 +547,7 @@ module hamsterpocket::chef {
         pocket::is_able_to_close(signer, pocket_id, true);
 
         // mark as closed
-        let status = pocket::mark_as_closed(
-            pocket_id,
-            signer
-        );
+        let status = pocket::mark_as_closed(pocket_id);
 
         // emit event
         event::emit_update_pocket_status_event(

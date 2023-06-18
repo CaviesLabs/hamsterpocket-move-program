@@ -259,7 +259,6 @@ module hamsterpocket::pocket {
 
     // update pocket
     public(friend) fun update_pocket(
-        signer: &signer,
         id: String,
         start_at: u64,
         frequency: u64,
@@ -379,10 +378,7 @@ module hamsterpocket::pocket {
     }
 
     // close pocket on behalf of owner
-    public(friend) fun mark_as_closed(
-        pocket_id: String,
-        signer: &signer
-    ): u64 acquires PocketStore, ResourceAccountStore {
+    public(friend) fun mark_as_closed(pocket_id: String): u64 acquires PocketStore, ResourceAccountStore {
         // extract pocket
         let pocket = &mut get_pocket(pocket_id);
 
@@ -397,10 +393,7 @@ module hamsterpocket::pocket {
     }
 
     // restart pocket on behalf of owner
-    public(friend) fun mark_as_active(
-        pocket_id: String,
-        signer: &signer
-    ): u64 acquires PocketStore, ResourceAccountStore {
+    public(friend) fun mark_as_active(pocket_id: String): u64 acquires PocketStore, ResourceAccountStore {
         // extract pocket
         let pocket = &mut get_pocket(pocket_id);
 
