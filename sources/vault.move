@@ -3,7 +3,7 @@ module hamsterpocket::vault {
     use aptos_framework::account;
     use aptos_std::table_with_length;
 
-    use pancake::router::swap_exact_input;
+    use pancake::router;
 
     use std::signer::address_of;
     use std::error;
@@ -15,6 +15,9 @@ module hamsterpocket::vault {
 
     const UNAVAILABLE_BALANCE: u64 = 0x0;
     const UNAVAILABLE_RESOURCE: u64 = 0x0;
+
+    // define AMM type
+    const AMM_PCS: u64 = 0x0;
 
     struct PocketSignerMap has key {
         signer_map: table_with_length::TableWithLength<address, account::SignerCapability>
@@ -30,34 +33,22 @@ module hamsterpocket::vault {
         );
     }
 
-    // make pcs swap
-    public(friend) fun make_pcs_swap<CoinIn, CoinOut>(
+    // make swap
+    public(friend) fun make_swap<CoinIn, CoinOut>(
         vault_owner: address,
         amount_in: u64,
-        min_amount_out: u64
+        min_amount_out: u64,
+        amm_type: u64
     ): (u64, u64) acquires PocketSignerMap {
-        let resource_signer = &get_resource_signer(vault_owner);
-
-        // register coin store for resource signer
-        if (!coin::is_account_registered<CoinOut>(address_of(resource_signer))) {
-            coin::register<CoinOut>(resource_signer);
+        if (amm_type == AMM_PCS) {
+            return make_pcs_swap<CoinIn, CoinOut>(
+                vault_owner,
+                amount_in,
+                min_amount_out,
+            )
         };
 
-        // calculate the before balancer
-        let balance_before = coin::balance<CoinOut>(address_of(resource_signer));
-
-        // make swap
-        swap_exact_input<CoinIn, CoinOut>(
-            resource_signer,
-            amount_in,
-            min_amount_out
-        );
-
-        // calculate the after balance
-        let balance_after = coin::balance<CoinOut>(address_of(resource_signer));
-
-        // here we return the delta amount
-        return (amount_in, balance_after - balance_before)
+        abort error::invalid_state(UNAVAILABLE_RESOURCE)
     }
 
     // deposit coin
@@ -141,5 +132,35 @@ module hamsterpocket::vault {
 
         let signer_cap = table_with_length::borrow(signer_map, sender);
         return account::create_signer_with_capability(signer_cap)
+    }
+
+    // make pcs swap
+    fun make_pcs_swap<CoinIn, CoinOut>(
+        vault_owner: address,
+        amount_in: u64,
+        min_amount_out: u64
+    ): (u64, u64) acquires PocketSignerMap {
+        let resource_signer = &get_resource_signer(vault_owner);
+
+        // register coin store for resource signer
+        if (!coin::is_account_registered<CoinOut>(address_of(resource_signer))) {
+            coin::register<CoinOut>(resource_signer);
+        };
+
+        // calculate the before balancer
+        let balance_before = coin::balance<CoinOut>(address_of(resource_signer));
+
+        // make swap
+        router::swap_exact_input<CoinIn, CoinOut>(
+            resource_signer,
+            amount_in,
+            min_amount_out
+        );
+
+        // calculate the after balance
+        let balance_after = coin::balance<CoinOut>(address_of(resource_signer));
+
+        // here we return the delta amount
+        return (amount_in, balance_after - balance_before)
     }
 }

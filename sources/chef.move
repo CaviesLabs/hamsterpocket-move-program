@@ -85,6 +85,7 @@ module hamsterpocket::chef {
         // now we make the swap
         let (
             owner,
+            amm,
             base_coin_type,
             target_coin_type,
             _,
@@ -92,10 +93,11 @@ module hamsterpocket::chef {
             target_coin_balance,
             _
         ) = pocket::get_trading_info(pocket_id);
-        let (amount_in, amount_out) = vault::make_pcs_swap<TargetCoin, BaseCoin>(
+        let (amount_in, amount_out) = vault::make_swap<TargetCoin, BaseCoin>(
             owner,
             target_coin_balance,
-            min_amount_out
+            min_amount_out,
+            amm
         );
 
         // now we check whether the pocket should stop loss or take profit
@@ -141,6 +143,7 @@ module hamsterpocket::chef {
             _,
             _,
             _,
+            _,
             status
         ) = pocket::get_trading_info(pocket_id);
 
@@ -177,6 +180,7 @@ module hamsterpocket::chef {
         // now we make dca swap
         let (
             owner,
+            amm,
             base_coin_type,
             target_coin_type,
             batch_volume,
@@ -184,10 +188,11 @@ module hamsterpocket::chef {
             _,
             _
         ) = pocket::get_trading_info(pocket_id);
-        let (amount_in, amount_out) = vault::make_pcs_swap<BaseCoin, TargetCoin>(
+        let (amount_in, amount_out) = vault::make_swap<BaseCoin, TargetCoin>(
             owner,
             batch_volume,
-            min_amount_out
+            min_amount_out,
+            amm
         );
 
         // update open position and trading stats
@@ -287,6 +292,7 @@ module hamsterpocket::chef {
         // now we make the swap
         let (
             owner,
+            amm,
             base_coin_type,
             target_coin_type,
             _,
@@ -294,10 +300,11 @@ module hamsterpocket::chef {
             target_coin_balance,
             _
         ) = pocket::get_trading_info(pocket_id);
-        let (amount_in, amount_out) = vault::make_pcs_swap<TargetCoin, BaseCoin>(
+        let (amount_in, amount_out) = vault::make_swap<TargetCoin, BaseCoin>(
             owner,
             target_coin_balance,
-            min_amount_out
+            min_amount_out,
+            amm
         );
 
         // update close position stats
@@ -316,6 +323,7 @@ module hamsterpocket::chef {
 
         // extract trading info
         let (
+            _,
             _,
             _,
             _,
@@ -413,6 +421,7 @@ module hamsterpocket::chef {
 
         let (
             _,
+            _,
             base_coin_type,
             _,
             _,
@@ -452,6 +461,7 @@ module hamsterpocket::chef {
 
         // extract trading info
         let (
+            _,
             _,
             base_coin_type,
             target_coin_type,

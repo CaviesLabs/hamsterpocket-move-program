@@ -631,10 +631,11 @@ module hamsterpocket::pocket {
     // get trading info of a pocket
     public(friend) fun get_trading_info(
         pocket_id: String
-    ): (address, String, String, u64, u64, u64, u64) acquires PocketStore, ResourceAccountStore {
+    ): (address, u64, String, String, u64, u64, u64, u64) acquires PocketStore, ResourceAccountStore {
         let pocket = &get_pocket(pocket_id);
         return (
             pocket.owner,
+            pocket.amm,
             pocket.base_coin_type,
             pocket.target_coin_type,
             pocket.batch_volume,
