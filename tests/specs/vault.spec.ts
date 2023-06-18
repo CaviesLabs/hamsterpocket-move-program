@@ -209,19 +209,19 @@ describe("vault", function () {
     const pocketId = "test-withdraw-pocket-id";
 
     await txBuilder
-      .buildDepositTransaction({
-        coinType: "0x1::aptos_coin::AptosCoin",
-        amount: BigInt(10000),
-        id: pocketData.id,
-      })
-      .execute();
-    await txBuilder.buildClosePocketTransaction({ id: pocketId }).execute();
-    await txBuilder
       .buildCreatePocketTransaction({
         ...pocketData,
         id: pocketId,
       })
       .execute();
+    await txBuilder
+      .buildDepositTransaction({
+        coinType: "0x1::aptos_coin::AptosCoin",
+        amount: BigInt(10000),
+        id: pocketId,
+      })
+      .execute();
+    await txBuilder.buildClosePocketTransaction({ id: pocketId }).execute();
 
     // close position
     await txBuilder
