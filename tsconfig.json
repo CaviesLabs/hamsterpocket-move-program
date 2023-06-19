@@ -8,14 +8,16 @@
     "strict": true,
     "skipLibCheck": true,
     "rootDirs": [
-      "./tests"
+      "."
     ],
     "experimentalDecorators": true
   },
   "exclude": [
-    "../hamsterpocket-move-program/node_modules"
+    "./node_modules"
   ],
   "include": [
-    "../hamsterpocket-move-program/tests"
+    "./tests",
+    "./client",
+    "./scripts"
   ]
 }

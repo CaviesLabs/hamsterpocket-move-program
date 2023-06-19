@@ -1,4 +1,4 @@
-import { UtilsProvider } from "./client/libs/utils.provider";
+import { UtilsProvider } from "../client/libs/utils.provider";
 
 describe("smart_decimals", function () {
   it("[smart_decimals] should: analyze 0.00000000002452 properly", function () {

@@ -1,5 +1,5 @@
-import { TransactionSigner } from "../client/transaction.client";
-import { TransactionBuilder } from "../client/transaction.builder";
+import { TransactionSigner } from "../../client/transaction.client";
+import { TransactionBuilder } from "../../client/transaction.builder";
 import { AptosBootingManager } from "../aptos-node/aptos.boot";
 import { AptosAccount } from "aptos";
 

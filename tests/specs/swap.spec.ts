@@ -6,9 +6,9 @@ import {
   MaybeHexString,
 } from "aptos";
 
-import { TransactionSigner } from "../client/transaction.client";
-import { TransactionBuilder } from "../client/transaction.builder";
-import { CreatePocketParams, DepositParams } from "../client/params.type";
+import { TransactionSigner } from "../../client/transaction.client";
+import { TransactionBuilder } from "../../client/transaction.builder";
+import { CreatePocketParams, DepositParams } from "../../client/params.type";
 import {
   AMM,
   AutoCloseConditionClosedWith,
@@ -16,7 +16,7 @@ import {
   PocketStatus,
   StopConditionStoppedWith,
   transformPocketEntity,
-} from "../client/entities/pocket.entity";
+} from "../../client/entities/pocket.entity";
 import { AptosBootingManager } from "../aptos-node/aptos.boot";
 
 const aptosNode = AptosBootingManager.getInstance();

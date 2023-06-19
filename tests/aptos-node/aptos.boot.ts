@@ -9,6 +9,7 @@ import {
   HexString,
   FaucetClient,
 } from "aptos";
+import { ProgramDeployer } from "../../client/libs/program.deployer";
 
 export class AptosBootingManager {
   public static currentInstance: AptosBootingManager | undefined;
@@ -61,27 +62,14 @@ export class AptosBootingManager {
   /**
    * @notice Prepare program to be ready for test
    */
-  public async deployProgram(
-    deployerAccount: string,
-    resourceAccount: string,
-    privateKey: string
-  ) {
-    /**
-     * @dev Deploy program
-     */
-    this.handler.execSync(
-      [
-        "aptos",
-        "move",
-        "publish",
-        "--assume-yes",
-        `--private-key ${privateKey}`,
-        `--sender-account ${resourceAccount}`,
-        `--named-addresses hamsterpocket=${resourceAccount},deployer=${deployerAccount}`,
-        `--url ${AptosBootingManager.APTOS_NODE_URL}`,
-      ].join(" "),
-      { stdio: "inherit" }
-    );
+  public async deployProgram(resourceAccount: string) {
+    const deployer = this.getDeployerAccount();
+
+    new ProgramDeployer(
+      resourceAccount,
+      deployer,
+      AptosBootingManager.APTOS_NODE_URL
+    ).deploy();
 
     /**
      * @dev Assign resource account

@@ -15,6 +15,8 @@
     "lint": "npm run compile && eslint . --ext .ts --fix",
     "prettier": "prettier --write 'tests/**/*.ts'",
     "lint:fix": "yarn run lint && yarn run prettier",
+    "deploy:testnet": "ts-node scripts/deploy.testnet.ts",
+    "deploy:mainnet": "ts-node scripts/deploy.mainnet.ts",
     "compile": "aptos move compile --named-addresses hamsterpocket=39aab5966d864fc2c394239377704ff5e05e1101e44acb2aacbd7f19f6a1a2a7,deployer=1e5320d3a1a12f28c22a52b62a3815cbf0efc49020089d350454f1d3fd53fd90"
   },
   "dependencies": {

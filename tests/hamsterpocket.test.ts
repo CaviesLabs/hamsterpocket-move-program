@@ -1,9 +1,9 @@
 import { AptosAccount } from "aptos";
 
 import { AptosBootingManager } from "./aptos-node/aptos.boot";
-import { RESOURCE_ACCOUNT_SEED } from "./client/libs/constants";
-import { TransactionSigner } from "./client/transaction.client";
-import { TransactionBuilder } from "./client/transaction.builder";
+import { RESOURCE_ACCOUNT_SEED } from "../client/libs/constants";
+import { TransactionSigner } from "../client/transaction.client";
+import { TransactionBuilder } from "../client/transaction.builder";
 
 const aptosLocalNodeProcess = AptosBootingManager.getInstance();
 
@@ -28,7 +28,7 @@ describe("hamsterpocket", function () {
       deployerAccount.toPrivateKeyObject().privateKeyHex,
       AptosBootingManager.APTOS_NODE_URL
     );
-    const txBuilder = new TransactionBuilder(signer, null);
+    const txBuilder = new TransactionBuilder(signer, resourceAccount.hex());
     await txBuilder
       .buildCreateResourceAccountTransaction({
         ownerAddress: deployerAccount.address().hex(),
@@ -38,11 +38,7 @@ describe("hamsterpocket", function () {
       .execute();
 
     // now we deploy program into testnet
-    await aptosLocalNodeProcess.deployProgram(
-      deployerAccount.address().hex(),
-      resourceAccount.hex(),
-      deployerAccount.toPrivateKeyObject().privateKeyHex
-    );
+    await aptosLocalNodeProcess.deployProgram(resourceAccount.hex());
   });
 
   afterAll(async () => {

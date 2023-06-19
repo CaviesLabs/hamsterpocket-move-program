@@ -130,6 +130,20 @@ Run the test
 $ yarn test
 ```
 
+### **Step 5: Deploy the program** 🚀
+
+Deploy onto testnet
+
+```bash
+$ yarn deploy:testnet
+```
+
+Deploy onto mainnet
+
+```bash
+$ yarn deploy:mainnet
+```
+
 ## **Contribution** 🤝
 
 Hamsterpocket is an Open Source project and we encourage everyone to help us making it better. If you are interested in contributing to the project, please feel free to do so.

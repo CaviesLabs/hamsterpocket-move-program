@@ -1,7 +1,7 @@
 import { AptosAccount, CoinClient } from "aptos";
 
-import { TransactionSigner } from "../client/transaction.client";
-import { TransactionBuilder } from "../client/transaction.builder";
+import { TransactionSigner } from "../../client/transaction.client";
+import { TransactionBuilder } from "../../client/transaction.builder";
 import { AptosBootingManager } from "../aptos-node/aptos.boot";
 
 const aptosNode = AptosBootingManager.getInstance();

@@ -1,5 +1,5 @@
-import { TransactionSigner } from "../client/transaction.client";
-import { TransactionBuilder } from "../client/transaction.builder";
+import { TransactionSigner } from "../../client/transaction.client";
+import { TransactionBuilder } from "../../client/transaction.builder";
 import { AptosBootingManager } from "../aptos-node/aptos.boot";
 import {
   AMM,
@@ -8,8 +8,8 @@ import {
   PocketStatus,
   StopConditionStoppedWith,
   transformPocketEntity,
-} from "../client/entities/pocket.entity";
-import { CreatePocketParams } from "../client/params.type";
+} from "../../client/entities/pocket.entity";
+import { CreatePocketParams } from "../../client/params.type";
 
 const aptosNode = AptosBootingManager.getInstance();
 
