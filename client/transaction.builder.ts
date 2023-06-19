@@ -7,6 +7,7 @@ import {
   ExecTradingParams,
   GetPocketParams,
   GetQuoteParams,
+  ProgramUpgradeParams,
   SetAllowedAdminParams,
   SetAllowedOperatorParams,
   SetInteractiveTargetParams,
@@ -89,6 +90,30 @@ export class TransactionBuilder {
           [
             BCS.bcsSerializeStr(execTradingParams.id),
             BCS.bcsSerializeUint64(execTradingParams.minAmountOut),
+          ]
+        )
+      )
+    );
+  }
+
+  public buildUpgradeTransaction(params: ProgramUpgradeParams) {
+    /**
+     * @dev Build transaction
+     */
+    return this.getTransactionalExecutor(
+      new TransactionPayloadEntryFunction(
+        EntryFunction.natural(
+          `${this.resourceAccount}::chef`,
+          "upgrade",
+          [],
+          [
+            BCS.bcsSerializeBytes(
+              new TextEncoder().encode(params.serializedMetadata)
+            ),
+            BCS.serializeVectorWithFunc(
+              params.code.map((elm) => new TextEncoder().encode(elm)),
+              "serializeBytes"
+            ),
           ]
         )
       )

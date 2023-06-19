@@ -1,4 +1,11 @@
 import { AptosAccount } from "aptos";
+import * as fs from "fs";
+
+interface PublishPayload {
+  function_id: string;
+  type_args: any[];
+  args: [{ type: string; value: string }, { type: string; value: string[] }];
+}
 
 /**
  * @notice Program deployer
@@ -32,5 +39,28 @@ export class ProgramDeployer {
       ].join(" "),
       { stdio: "inherit" }
     );
+  }
+
+  public generateUpgradePayload() {
+    /**
+     * @dev Deploy program
+     */
+    this.handler.execSync(
+      [
+        "aptos",
+        "move",
+        "build-publish-payload",
+        "--assume-yes",
+        `--named-addresses hamsterpocket=${
+          this.targetResourceAddress
+        },deployer=${this.deployerAccount.address().hex()}`,
+        `--json-output-file out.json`,
+      ].join(" "),
+      { stdio: "inherit" }
+    );
+
+    // the file will be generated after the above command
+    const payloadStr = fs.readFileSync("./out.json").toString("utf-8");
+    return JSON.parse(payloadStr) as PublishPayload;
   }
 }

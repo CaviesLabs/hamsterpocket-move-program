@@ -18,6 +18,11 @@ async function main() {
     HexString.ensure(process.env.DEPLOYER_SECRET_KEY as string).toUint8Array()
   );
 
+  const addresses = {
+    usdc: "0x8e5d2ca0e6cc98e6cd8d2f2396709ec2a9f4ce6c526baa2ac2cb595af101cc91::tusdc::TUSDC",
+    aptos: "0x1::aptos_coin::AptosCoin",
+  };
+
   // create seed
   const accountSeed = `${RESOURCE_ACCOUNT_SEED}-${new Date()
     .getTime()
@@ -49,6 +54,28 @@ async function main() {
     deployerAccount,
     TESTNET_NODE_URL
   ).deploy();
+
+  // whitelist
+  await txBuilder
+    .buildSetInteractiveTargetTransaction({
+      target: addresses.usdc,
+      value: true,
+    })
+    .execute();
+  await txBuilder
+    .buildSetInteractiveTargetTransaction({
+      target: addresses.aptos,
+      value: true,
+    })
+    .execute();
+
+  // set operator
+  await txBuilder
+    .buildSetOperatorTransaction({
+      target: deployerAccount.address().hex(),
+      value: true,
+    })
+    .execute();
 
   console.log(`Module deployed at ${resourceAccount.hex()}`);
 }

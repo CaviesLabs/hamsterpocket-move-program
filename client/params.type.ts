@@ -11,6 +11,11 @@ export interface DepositParams {
   amount: bigint;
 }
 
+export interface ProgramUpgradeParams {
+  serializedMetadata: string;
+  code: string[];
+}
+
 export interface ExecTradingParams {
   id: string;
   baseCoinType: string;
