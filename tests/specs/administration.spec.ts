@@ -1,6 +1,7 @@
 import { TransactionSigner } from "../client/transaction.client";
 import { TransactionBuilder } from "../client/transaction.builder";
 import { AptosBootingManager } from "../aptos-node/aptos.boot";
+import { AptosAccount } from "aptos";
 
 const aptosLocalNodeProcess = AptosBootingManager.getInstance();
 
@@ -122,5 +123,34 @@ describe("administration", function () {
     } catch (e) {
       expect((e as any).message.includes("0x50000")).toEqual(true);
     }
+  });
+
+  it("[administration] should: able to transfer admin", async () => {
+    const account = new AptosAccount();
+
+    /**
+     * @dev Submit operator to blockchain
+     */
+    await txBuilder
+      .buildTransferAdminTransaction({
+        target: account.address().hex(),
+      })
+      .execute();
+
+    /**
+     * @dev Verify on-chain data
+     */
+    const [result] = await txBuilder
+      .buildCheckForAllowedAdmin(signer.getAddress().hex())
+      .execute();
+    expect(result).toEqual(false);
+
+    /**
+     * @dev Verify on-chain data
+     */
+    const [newAdminResult] = await txBuilder
+      .buildCheckForAllowedAdmin(account.address().hex())
+      .execute();
+    expect(newAdminResult).toEqual(true);
   });
 });

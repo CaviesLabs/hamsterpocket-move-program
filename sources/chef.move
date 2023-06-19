@@ -590,6 +590,37 @@ module hamsterpocket::chef {
         );
     }
 
+    // set transfer admin
+    public entry fun transfer_admin(signer: &signer, address: vector<u8>) {
+        platform::is_admin(address_of(signer), true);
+
+        // unset permission
+        platform::set_admin(
+            address_of(signer),
+            false
+        );
+
+        // emit event
+        event::emit_update_allowed_admin(
+            address_of(signer),
+            address_of(signer),
+            false
+        );
+
+        // transfer to new admin
+        platform::set_admin(
+            to_address(address),
+            true
+        );
+
+        // emit event
+        event::emit_update_allowed_admin(
+            address_of(signer),
+            to_address(address),
+            true
+        );
+    }
+
     // get pocket data
     #[view]
     public fun get_pocket(id: vector<u8>): pocket::Pocket {

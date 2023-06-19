@@ -18,6 +18,13 @@ module hamsterpocket::event {
         timestamp: u64
     }
 
+    struct UpdateAdminEvent has store, drop, copy {
+        actor: address,
+        target: address,
+        value: bool,
+        timestamp: u64
+    }
+
     struct UpdateTargetEvent has store, drop, copy {
         actor: address,
         target: String,
@@ -92,6 +99,7 @@ module hamsterpocket::event {
     struct EventManager has key {
         update_allowed_target: event::EventHandle<UpdateTargetEvent>,
         update_allowed_operator: event::EventHandle<UpdateOperatorEvent>,
+        update_allowed_admin: event::EventHandle<UpdateAdminEvent>,
         create_pocket: event::EventHandle<UpdatePocketEvent>,
         update_pocket: event::EventHandle<UpdatePocketEvent>,
         update_pocket_status: event::EventHandle<UpdatePocketStatusEvent>,
@@ -108,6 +116,7 @@ module hamsterpocket::event {
             EventManager {
                 update_allowed_target: account::new_event_handle<UpdateTargetEvent>(hamsterpocket_signer),
                 update_allowed_operator: account::new_event_handle<UpdateOperatorEvent>(hamsterpocket_signer),
+                update_allowed_admin: account::new_event_handle<UpdateAdminEvent>(hamsterpocket_signer),
                 create_pocket: account::new_event_handle<UpdatePocketEvent>(hamsterpocket_signer),
                 update_pocket: account::new_event_handle<UpdatePocketEvent>(hamsterpocket_signer),
                 update_pocket_status: account::new_event_handle<UpdatePocketStatusEvent>(hamsterpocket_signer),
@@ -149,6 +158,25 @@ module hamsterpocket::event {
         event::emit_event<UpdateOperatorEvent>(
             &mut event_manager.update_allowed_operator,
             UpdateOperatorEvent {
+                actor,
+                target,
+                value,
+                timestamp: timestamp::now_seconds()
+            }
+        );
+    }
+
+    // emit update allowed admin event
+    public(friend) fun emit_update_allowed_admin(
+        actor: address,
+        target: address,
+        value: bool
+    ) acquires EventManager {
+        let event_manager = borrow_global_mut<EventManager>(HAMSTERPOCKET);
+
+        event::emit_event<UpdateAdminEvent>(
+            &mut event_manager.update_allowed_admin,
+            UpdateAdminEvent {
                 actor,
                 target,
                 value,

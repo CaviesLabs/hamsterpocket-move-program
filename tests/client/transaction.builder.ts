@@ -7,6 +7,7 @@ import {
   ExecTradingParams,
   GetPocketParams,
   GetQuoteParams,
+  SetAllowedAdminParams,
   SetAllowedOperatorParams,
   SetInteractiveTargetParams,
   UpdatePocketParams,
@@ -309,6 +310,30 @@ export class TransactionBuilder {
               HexString.ensure(params.ownerAddress).toUint8Array()
             ),
             BCS.bcsSerializeUint64(params.amountToFund),
+          ]
+        )
+      )
+    );
+  }
+
+  /**
+   * @notice Build transfer admin transaction
+   * @param params
+   */
+  public buildTransferAdminTransaction(params: SetAllowedAdminParams) {
+    /**
+     * @dev Build transaction
+     */
+    return this.getTransactionalExecutor(
+      new TransactionPayloadEntryFunction(
+        EntryFunction.natural(
+          `${this.resourceAccount}::chef`,
+          "transfer_admin",
+          [],
+          [
+            BCS.bcsSerializeBytes(
+              HexString.ensure(params.target).toUint8Array()
+            ),
           ]
         )
       )

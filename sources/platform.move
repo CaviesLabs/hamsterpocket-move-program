@@ -77,6 +77,14 @@ module hamsterpocket::platform {
         table_with_length::upsert<address, bool>(allowed_operators, operator, enabled);
     }
 
+    // enable operators
+    public(friend) fun set_admin(admin: address, enabled: bool) acquires PlatformConfig {
+        let config = borrow_global_mut<PlatformConfig>(HAMSTERPOCKET);
+        let allowed_admins = &mut config.allowed_admins;
+
+        table_with_length::upsert<address, bool>(allowed_admins, admin, enabled);
+    }
+
     // check whether the signer is admin
     public(friend) fun is_admin(signer: address, raise_error: bool): bool acquires PlatformConfig {
         let config = borrow_global<PlatformConfig>(HAMSTERPOCKET);

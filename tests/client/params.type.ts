@@ -63,6 +63,10 @@ export interface SetAllowedOperatorParams {
   value: boolean;
 }
 
+export interface SetAllowedAdminParams {
+  target: string;
+}
+
 export interface CreateResourceAccountParams {
   seed: string;
   ownerAddress: string;
