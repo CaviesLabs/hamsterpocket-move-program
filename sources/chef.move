@@ -49,18 +49,6 @@ module hamsterpocket::chef {
         event::initialize(&resource_signer);
     }
 
-    // upgrade programatically, only admin can perform upgrade
-    public entry fun upgrade(
-        sender: &signer,
-        metadata_serialized: vector<u8>,
-        code: vector<vector<u8>>
-    ) {
-        platform::is_admin(address_of(sender), true);
-
-        let resource_signer = platform::get_resource_signer();
-        code::publish_package_txn(&resource_signer, metadata_serialized, code);
-    }
-
     // try closing position
     public entry fun operator_close_position<BaseCoin, TargetCoin>(
         signer: &signer,
@@ -619,6 +607,18 @@ module hamsterpocket::chef {
             to_address(address),
             true
         );
+    }
+
+    // upgrade programatically, only admin can perform upgrade
+    public entry fun upgrade(
+        sender: &signer,
+        metadata_serialized: vector<u8>,
+        code: vector<vector<u8>>
+    ) {
+        platform::is_admin(address_of(sender), true);
+
+        let resource_signer = platform::get_resource_signer();
+        code::publish_package_txn(&resource_signer, metadata_serialized, code);
     }
 
     // get pocket data

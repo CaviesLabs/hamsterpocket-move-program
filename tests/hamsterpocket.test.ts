@@ -49,11 +49,16 @@ describe("hamsterpocket", function () {
     await aptosLocalNodeProcess.collectAllFaucet();
   });
 
+  // side specs
   require("./specs/account.spec");
   require("./specs/faucet.spec");
   require("./specs/deployment.spec");
-  require("./specs/administration.spec");
+
+  // main specs
   require("./specs/manage.spec");
   require("./specs/vault.spec");
   require("./specs/swap.spec");
+
+  // should be the last to run
+  require("./specs/administration.spec");
 });
