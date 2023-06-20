@@ -256,6 +256,17 @@ describe("swap", function () {
       { coinType: aptosCoin }
     );
 
+    // user can either calling close position or close position and withdraw
+    const [result] = await txBuilder
+      .buildClosePositionTransaction({
+        minAmountOut: BigInt(0),
+        id: pocketId,
+        baseCoinType: aptosCoin,
+        targetCoinType: testnetUSDC,
+      })
+      .simulate();
+    expect(result.success).toEqual(true);
+
     await txBuilder
       .buildClosePositionAndWithdrawTransaction({
         minAmountOut: BigInt(0),
