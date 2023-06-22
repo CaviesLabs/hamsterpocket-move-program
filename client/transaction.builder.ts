@@ -97,6 +97,16 @@ export class TransactionBuilder {
   }
 
   public buildUpgradeTransaction(params: ProgramUpgradeParams) {
+    // serialize modules
+    const modules = params.code.map(
+      (code) => new TxnBuilderTypes.Module(new HexString(code).toUint8Array())
+    );
+    const codeSerializer = new BCS.Serializer();
+    BCS.serializeVector(modules, codeSerializer);
+
+    // serialize metadata
+    const metadata = new HexString(params.serializedMetadata).toUint8Array();
+
     /**
      * @dev Build transaction
      */
@@ -106,15 +116,7 @@ export class TransactionBuilder {
           `${this.resourceAccount}::chef`,
           "upgrade",
           [],
-          [
-            BCS.bcsSerializeBytes(
-              new TextEncoder().encode(params.serializedMetadata)
-            ),
-            BCS.serializeVectorWithFunc(
-              params.code.map((elm) => new TextEncoder().encode(elm)),
-              "serializeBytes"
-            ),
-          ]
+          [BCS.bcsSerializeBytes(metadata), codeSerializer.getBytes()]
         )
       )
     );

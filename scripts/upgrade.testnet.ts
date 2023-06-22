@@ -37,12 +37,14 @@ async function main() {
   ).generateUpgradePayload();
 
   // now we publish/upgrade package
-  await txBuilder
+  const tx = await txBuilder
     .buildUpgradeTransaction({
       serializedMetadata: payload.args[0].value,
       code: payload.args[1].value,
     })
     .execute();
+
+  console.log(`program upgraded at tx: ${tx.txId}`);
 }
 
 main().catch((error) => {
