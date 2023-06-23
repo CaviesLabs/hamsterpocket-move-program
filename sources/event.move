@@ -11,6 +11,11 @@ module hamsterpocket::event {
 
     const HAMSTERPOCKET: address = @hamsterpocket;
 
+    struct UpgradeEvent has store, drop, copy {
+        actor: address,
+        timestamp: u64
+    }
+
     struct UpdateOperatorEvent has store, drop, copy {
         actor: address,
         target: address,
@@ -60,7 +65,7 @@ module hamsterpocket::event {
         timestamp: u64
     }
 
-    // define udpate withdrawal stats event
+    // define update withdrawal stats event
     struct UpdateWithdrawalStatsEvent has store, drop, copy {
         id: String,
         actor: address,
@@ -97,6 +102,7 @@ module hamsterpocket::event {
     }
 
     struct EventManager has key {
+        upgrade: event::EventHandle<UpgradeEvent>,
         update_allowed_target: event::EventHandle<UpdateTargetEvent>,
         update_allowed_operator: event::EventHandle<UpdateOperatorEvent>,
         update_allowed_admin: event::EventHandle<UpdateAdminEvent>,
@@ -104,7 +110,7 @@ module hamsterpocket::event {
         update_pocket: event::EventHandle<UpdatePocketEvent>,
         update_pocket_status: event::EventHandle<UpdatePocketStatusEvent>,
         update_trading_stats: event::EventHandle<UpdateTradingStatsEvent>,
-        update_close_position: event::EventHandle<UpdateClosePositionEvent>,
+        update_close_position_stats: event::EventHandle<UpdateClosePositionEvent>,
         update_deposit_stats: event::EventHandle<UpdateDepositStatsEvent>,
         update_withdrawal_stats: event::EventHandle<UpdateWithdrawalStatsEvent>
     }
@@ -114,6 +120,7 @@ module hamsterpocket::event {
         move_to(
             hamsterpocket_signer,
             EventManager {
+                upgrade: account::new_event_handle<UpgradeEvent>(hamsterpocket_signer),
                 update_allowed_target: account::new_event_handle<UpdateTargetEvent>(hamsterpocket_signer),
                 update_allowed_operator: account::new_event_handle<UpdateOperatorEvent>(hamsterpocket_signer),
                 update_allowed_admin: account::new_event_handle<UpdateAdminEvent>(hamsterpocket_signer),
@@ -121,9 +128,24 @@ module hamsterpocket::event {
                 update_pocket: account::new_event_handle<UpdatePocketEvent>(hamsterpocket_signer),
                 update_pocket_status: account::new_event_handle<UpdatePocketStatusEvent>(hamsterpocket_signer),
                 update_trading_stats: account::new_event_handle<UpdateTradingStatsEvent>(hamsterpocket_signer),
-                update_close_position: account::new_event_handle<UpdateClosePositionEvent>(hamsterpocket_signer),
+                update_close_position_stats: account::new_event_handle<UpdateClosePositionEvent>(hamsterpocket_signer),
                 update_deposit_stats: account::new_event_handle<UpdateDepositStatsEvent>(hamsterpocket_signer),
                 update_withdrawal_stats: account::new_event_handle<UpdateWithdrawalStatsEvent>(hamsterpocket_signer)
+            }
+        );
+    }
+
+    // emit upgrade event
+    public(friend) fun emit_upgrade_event(
+        actor: address,
+    ) acquires EventManager {
+        let event_manager = borrow_global_mut<EventManager>(HAMSTERPOCKET);
+
+        event::emit_event<UpgradeEvent>(
+            &mut event_manager.upgrade,
+            UpgradeEvent {
+                actor,
+                timestamp: timestamp::now_seconds()
             }
         );
     }
@@ -338,7 +360,7 @@ module hamsterpocket::event {
         let event_manager = borrow_global_mut<EventManager>(HAMSTERPOCKET);
 
         event::emit_event<UpdateClosePositionEvent>(
-            &mut event_manager.update_close_position,
+            &mut event_manager.update_close_position_stats,
             UpdateClosePositionEvent {
                 id,
                 actor,

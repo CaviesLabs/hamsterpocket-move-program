@@ -44,13 +44,13 @@ describe("hamsterpocket", function () {
   afterAll(async () => {
     await aptosLocalNodeProcess.collectAllFaucet();
   });
-
-  // side specs
+  //
+  // // side specs
   require("./specs/account.spec");
   require("./specs/faucet.spec");
   require("./specs/deployment.spec");
-
-  // main specs
+  //
+  // // main specs
   require("./specs/manage.spec");
   require("./specs/vault.spec");
   require("./specs/swap.spec");

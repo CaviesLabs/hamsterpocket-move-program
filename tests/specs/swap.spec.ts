@@ -18,6 +18,7 @@ import {
   transformPocketEntity,
 } from "../../client/entities/pocket.entity";
 import { AptosBootingManager } from "../aptos-node/aptos.boot";
+import { EventIndexer } from "../../client/events.indexer";
 
 const aptosNode = AptosBootingManager.getInstance();
 
@@ -48,36 +49,41 @@ describe("swap", function () {
   let operator: AptosAccount;
 
   let coinClient: CoinClient;
+  let eventIndexer: EventIndexer;
 
   const testnetUSDC =
     "0x8e5d2ca0e6cc98e6cd8d2f2396709ec2a9f4ce6c526baa2ac2cb595af101cc91::tusdc::TUSDC";
   const aptosCoin = "0x1::aptos_coin::AptosCoin";
 
-  const pocketData: CreatePocketParams = {
-    id: "test-vault-swap",
-    amm: AMM.PCS,
-    baseCoinType: aptosCoin,
-    targetCoinType: testnetUSDC,
-    batchVolume: BigInt(1e8 * 0.01),
-    frequency: BigInt(3600),
-    startAt: BigInt(parseInt((new Date().getTime() / 1000).toString())),
-    openPositionCondition: [OpenPositionOperator.UNSET, BigInt(0), BigInt(0)],
-    stopLossCondition: [
-      StopConditionStoppedWith.STOPPED_WITH_PRICE,
-      BigInt(1e8 * 250_000),
-    ], // price per base coin
-    takeProfitCondition: [StopConditionStoppedWith.UNSET, BigInt(0)],
-    autoClosedConditions: [
-      [AutoCloseConditionClosedWith.CLOSED_WITH_BATCH_AMOUNT, BigInt(1)],
-    ],
-  };
-  const depositParams: DepositParams = {
-    id: pocketData.id,
-    amount: BigInt(1e6 * 5),
-    coinType: pocketData.baseCoinType,
-  };
+  let pocketData: CreatePocketParams;
+  let depositParams: DepositParams;
 
   beforeAll(async () => {
+    pocketData = {
+      id: "test-vault-swap",
+      amm: AMM.PCS,
+      baseCoinType: aptosCoin,
+      targetCoinType: testnetUSDC,
+      batchVolume: BigInt(1e8 * 0.01),
+      frequency: BigInt(3600),
+      startAt: BigInt(parseInt((new Date().getTime() / 1000).toString())),
+      openPositionCondition: [OpenPositionOperator.UNSET, BigInt(0), BigInt(0)],
+      stopLossCondition: [
+        StopConditionStoppedWith.STOPPED_WITH_PRICE,
+        BigInt(1e8 * 250_000),
+      ], // price per base coin
+      takeProfitCondition: [StopConditionStoppedWith.UNSET, BigInt(0)],
+      autoClosedConditions: [
+        [AutoCloseConditionClosedWith.CLOSED_WITH_BATCH_AMOUNT, BigInt(1)],
+      ],
+    };
+
+    depositParams = {
+      id: pocketData.id,
+      amount: BigInt(1e6 * 5),
+      coinType: pocketData.baseCoinType,
+    };
+
     /**
      * @dev create new account
      */
@@ -103,6 +109,10 @@ describe("swap", function () {
     );
     coinClient = new CoinClient(
       new AptosClient(AptosBootingManager.APTOS_NODE_URL)
+    );
+    eventIndexer = new EventIndexer(
+      new AptosClient(AptosBootingManager.APTOS_NODE_URL),
+      aptosNode.resourceAccountAddress
     );
 
     /**
@@ -202,6 +212,21 @@ describe("swap", function () {
     expect(pocket.status).toEqual(PocketStatus.STATUS_CLOSED); // closed due to auto close condition
     expect(pocket.base_coin_balance).toEqual(BigInt(1e6 * 4));
     expect(pocket.target_coin_balance).toBeGreaterThan(BigInt(0));
+
+    // expect event
+    const [event] = await eventIndexer.getUpdateTradingStatsEvents({
+      start: 0,
+      limit: 1,
+    });
+    expect(event.data.id).toEqual(pocketData.id);
+    expect(event.data.base_coin_type).toEqual(aptosCoin);
+    expect(Number(event.data.swapped_base_coin_amount)).toEqual(
+      Number(pocketData.batchVolume)
+    );
+    expect(event.data.target_coin_type).toEqual(testnetUSDC);
+    expect(Number(event.data.received_target_coin_amount)).toBeGreaterThan(
+      Number(0)
+    );
   });
 
   it("[swap] should: operator can make close position swap properly", async () => {
@@ -224,6 +249,21 @@ describe("swap", function () {
     expect(pocket.status).toEqual(PocketStatus.STATUS_CLOSED); // closed due to auto close condition
     expect(pocket.base_coin_balance).toBeGreaterThan(BigInt(1e6 * 4));
     expect(pocket.target_coin_balance).toEqual(BigInt(0));
+
+    // expect event
+    const [event] = await eventIndexer.getUpdateClosePositionStats({
+      start: 0,
+      limit: 1,
+    });
+    expect(event.data.id).toEqual(pocketData.id);
+    expect(event.data.base_coin_type).toEqual(aptosCoin);
+    expect(Number(event.data.received_base_coin_amount)).toBeGreaterThan(
+      Number(0)
+    );
+    expect(event.data.target_coin_type).toEqual(testnetUSDC);
+    expect(Number(event.data.received_base_coin_amount)).toBeGreaterThan(
+      Number(0)
+    );
   });
 
   it("[swap] should: owner close position and withdraw successfully", async () => {

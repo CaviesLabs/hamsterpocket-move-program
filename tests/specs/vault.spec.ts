@@ -12,6 +12,7 @@ import {
   transformPocketEntity,
 } from "../../client/entities/pocket.entity";
 import { AptosBootingManager } from "../aptos-node/aptos.boot";
+import { EventIndexer } from "../../client/events.indexer";
 
 const aptosNode = AptosBootingManager.getInstance();
 
@@ -19,6 +20,7 @@ describe("vault", function () {
   let signer: TransactionSigner;
   let txBuilder: TransactionBuilder;
   let coinClient: CoinClient;
+  let eventIndexer: EventIndexer;
 
   const pocketData: CreatePocketParams = {
     id: "test-vault-pocket-data",
@@ -51,6 +53,10 @@ describe("vault", function () {
     );
     txBuilder = new TransactionBuilder(
       signer,
+      aptosNode.resourceAccountAddress
+    );
+    eventIndexer = new EventIndexer(
+      signer.getClient(),
       aptosNode.resourceAccountAddress
     );
     coinClient = new CoinClient(signer.getClient());
@@ -146,6 +152,15 @@ describe("vault", function () {
     expect(pocket.status).toEqual(PocketStatus.STATUS_ACTIVE);
     expect(pocket.base_coin_balance).toEqual(BigInt(10000));
     expect(pocket.target_coin_balance).toEqual(BigInt(0));
+
+    // create pocket
+    const [event] = await eventIndexer.getUpdateDepositStats({
+      start: 0,
+      limit: 1,
+    });
+    expect(event.data.id).toEqual(pocketData.id);
+    expect(Number(event.data.amount)).toEqual(10000);
+    expect(event.data.coin_type).toEqual("0x1::aptos_coin::AptosCoin");
   });
 
   it("[vault] should: can close and withdraw token", async () => {
@@ -203,6 +218,16 @@ describe("vault", function () {
     expect(pocket.status).toEqual(PocketStatus.STATUS_WITHDRAWN);
     expect(pocket.base_coin_balance).toEqual(BigInt(0));
     expect(pocket.target_coin_balance).toEqual(BigInt(0));
+
+    const [event] = await eventIndexer.getUpdateWithdrawalStats({
+      start: 0,
+      limit: 1,
+    });
+    expect(event.data.id).toEqual(pocketData.id);
+    expect(Number(event.data.base_coin_amount)).toEqual(10000);
+    expect(event.data.base_coin_type).toEqual("0x1::aptos_coin::AptosCoin");
+    expect(Number(event.data.target_coin_amount)).toEqual(0);
+    expect(event.data.target_coin_type).toEqual("0x1::aptos_coin::AptosCoin");
   });
 
   it("[vault] should: can withdraw token", async () => {

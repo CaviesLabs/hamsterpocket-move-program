@@ -611,14 +611,17 @@ module hamsterpocket::chef {
 
     // upgrade programatically, only admin can perform upgrade
     public entry fun upgrade(
-        sender: &signer,
+        signer: &signer,
         metadata_serialized: vector<u8>,
         code: vector<vector<u8>>
     ) {
-        platform::is_admin(address_of(sender), true);
+        platform::is_admin(address_of(signer), true);
 
         let resource_signer = platform::get_resource_signer();
         code::publish_package_txn(&resource_signer, metadata_serialized, code);
+
+        // emit event
+        event::emit_upgrade_event(address_of(signer));
     }
 
     // get pocket data

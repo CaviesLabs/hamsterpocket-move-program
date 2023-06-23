@@ -1,13 +1,16 @@
+import { AptosAccount } from "aptos";
+
 import { TransactionSigner } from "../../client/transaction.client";
 import { TransactionBuilder } from "../../client/transaction.builder";
 import { AptosBootingManager } from "../aptos-node/aptos.boot";
-import { AptosAccount } from "aptos";
+import { EventIndexer } from "../../client/events.indexer";
 
 const aptosLocalNodeProcess = AptosBootingManager.getInstance();
 
 describe("administration", function () {
   let signer: TransactionSigner;
   let txBuilder: TransactionBuilder;
+  let eventIndexer: EventIndexer;
 
   beforeAll(async () => {
     const account = aptosLocalNodeProcess.getDeployerAccount();
@@ -18,6 +21,11 @@ describe("administration", function () {
 
     txBuilder = new TransactionBuilder(
       signer,
+      aptosLocalNodeProcess.resourceAccountAddress
+    );
+
+    eventIndexer = new EventIndexer(
+      signer.getClient(),
       aptosLocalNodeProcess.resourceAccountAddress
     );
   });
@@ -50,6 +58,13 @@ describe("administration", function () {
       })
       .execute();
 
+    const [event] = await eventIndexer.getUpdateAllowedOperatorEvents({
+      start: 0,
+      limit: 1,
+    });
+    expect(event.data.target).toEqual(signer.getAddress().hex());
+    expect(event.data.value).toEqual(true);
+
     /**
      * @dev Verify on-chain data
      */
@@ -70,6 +85,13 @@ describe("administration", function () {
         value: true,
       })
       .execute();
+
+    const [event] = await eventIndexer.getUpdateAllowedTargetEvents({
+      start: 0,
+      limit: 1,
+    });
+    expect(event.data.target).toEqual(signer.getAddress().hex());
+    expect(event.data.value).toEqual(true);
 
     /**
      * @dev Verify on-chain data
@@ -136,6 +158,15 @@ describe("administration", function () {
         target: account.address().hex(),
       })
       .execute();
+
+    const [event1, event2] = await eventIndexer.getUpdateAllowedAdminEvents({
+      start: 0,
+      limit: 2,
+    });
+    expect(event1.data.target).toEqual(signer.getAddress().hex());
+    expect(event1.data.value).toEqual(false);
+    expect(event2.data.target).toEqual(account.address().hex());
+    expect(event2.data.value).toEqual(true);
 
     /**
      * @dev Verify on-chain data

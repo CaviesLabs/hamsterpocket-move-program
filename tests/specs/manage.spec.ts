@@ -10,12 +10,14 @@ import {
   transformPocketEntity,
 } from "../../client/entities/pocket.entity";
 import { CreatePocketParams } from "../../client/params.type";
+import { EventIndexer } from "../../client/events.indexer";
 
 const aptosNode = AptosBootingManager.getInstance();
 
 describe("manage_pocket", function () {
   let signer: TransactionSigner;
   let txBuilder: TransactionBuilder;
+  let eventIndexer: EventIndexer;
 
   const pocketData: CreatePocketParams = {
     id: "testpocketdata",
@@ -48,6 +50,10 @@ describe("manage_pocket", function () {
     );
     txBuilder = new TransactionBuilder(
       signer,
+      aptosNode.resourceAccountAddress
+    );
+    eventIndexer = new EventIndexer(
+      signer.getClient(),
       aptosNode.resourceAccountAddress
     );
 
@@ -110,6 +116,13 @@ describe("manage_pocket", function () {
     expect(transformedPocket.auto_close_conditions[0].value).toEqual(
       BigInt(13)
     );
+
+    // check for event
+    const [event] = await eventIndexer.getCreatePocketEvents({
+      start: 0,
+      limit: 1,
+    });
+    expect(event.data.pocket.id).toEqual(pocketData.id);
   });
 
   it("[manage_pocket] should: update pocket successfully", async () => {
@@ -144,6 +157,15 @@ describe("manage_pocket", function () {
       BigInt(10)
     );
     expect(transformedPocket.auto_close_conditions.length).toEqual(0);
+
+    const [event] = await eventIndexer.getUpdatePocketEvents({
+      start: 0,
+      limit: 1,
+    });
+    expect(event.data.pocket.id).toEqual(pocketData.id);
+    expect(Number(event.data.pocket.open_position_condition.operator)).toEqual(
+      OpenPositionOperator.OPERATOR_GTE
+    );
   });
 
   it("[manage_pocket] should: can pause pocket", async () => {
@@ -161,6 +183,15 @@ describe("manage_pocket", function () {
     // expect
     expect(transformedPocket.id).toEqual(pocketData.id);
     expect(transformedPocket.status).toEqual(PocketStatus.STATUS_PAUSED);
+
+    const [event] = await eventIndexer.getUpdatePocketStatusEvents({
+      start: 0,
+      limit: 1,
+    });
+    expect(event.data.id).toEqual(pocketData.id);
+    expect(Number(event.data.status) as PocketStatus).toEqual(
+      PocketStatus.STATUS_PAUSED
+    );
   });
 
   it("[manage_pocket] should: can restart pocket", async () => {
@@ -178,6 +209,15 @@ describe("manage_pocket", function () {
     // expect
     expect(transformedPocket.id).toEqual(pocketData.id);
     expect(transformedPocket.status).toEqual(PocketStatus.STATUS_ACTIVE);
+
+    const [event] = await eventIndexer.getUpdatePocketStatusEvents({
+      start: 1,
+      limit: 1,
+    });
+    expect(event.data.id).toEqual(pocketData.id);
+    expect(Number(event.data.status) as PocketStatus).toEqual(
+      PocketStatus.STATUS_ACTIVE
+    );
   });
 
   it("[manage_pocket] should: can close pocket", async () => {
@@ -195,5 +235,14 @@ describe("manage_pocket", function () {
     // expect
     expect(transformedPocket.id).toEqual(pocketData.id);
     expect(transformedPocket.status).toEqual(PocketStatus.STATUS_CLOSED);
+
+    const [event] = await eventIndexer.getUpdatePocketStatusEvents({
+      start: 2,
+      limit: 1,
+    });
+    expect(event.data.id).toEqual(pocketData.id);
+    expect(Number(event.data.status) as PocketStatus).toEqual(
+      PocketStatus.STATUS_CLOSED
+    );
   });
 });
