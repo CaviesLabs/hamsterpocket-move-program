@@ -58,12 +58,13 @@ describe("administration", function () {
       })
       .execute();
 
-    const [event] = await eventIndexer.getUpdateAllowedOperatorEvents({
+    const events = await eventIndexer.getUpdateAllowedOperatorEvents({
       start: 0,
       limit: 1000,
     });
-    expect(event.data.target).toEqual(signer.getAddress().hex());
-    expect(event.data.value).toEqual(true);
+    const event = events.pop();
+    expect(event?.data.target).toEqual(signer.getAddress().hex());
+    expect(event?.data.value).toEqual(true);
 
     /**
      * @dev Verify on-chain data
@@ -86,12 +87,13 @@ describe("administration", function () {
       })
       .execute();
 
-    const [event] = await eventIndexer.getUpdateAllowedTargetEvents({
+    const events = await eventIndexer.getUpdateAllowedTargetEvents({
       start: 0,
       limit: 1000,
     });
-    expect(event.data.target).toEqual(signer.getAddress().hex());
-    expect(event.data.value).toEqual(true);
+    const event = events.pop();
+    expect(event?.data.target).toEqual(signer.getAddress().hex());
+    expect(event?.data.value).toEqual(true);
 
     /**
      * @dev Verify on-chain data
@@ -159,14 +161,16 @@ describe("administration", function () {
       })
       .execute();
 
-    const [event1, event2] = await eventIndexer.getUpdateAllowedAdminEvents({
+    const events = await eventIndexer.getUpdateAllowedAdminEvents({
       start: 0,
       limit: 1000,
     });
-    expect(event1.data.target).toEqual(signer.getAddress().hex());
-    expect(event1.data.value).toEqual(false);
-    expect(event2.data.target).toEqual(account.address().hex());
-    expect(event2.data.value).toEqual(true);
+    const event2 = events.pop();
+    const event1 = events.pop();
+    expect(event1?.data.target).toEqual(signer.getAddress().hex());
+    expect(event1?.data.value).toEqual(false);
+    expect(event2?.data.target).toEqual(account.address().hex());
+    expect(event2?.data.value).toEqual(true);
 
     /**
      * @dev Verify on-chain data
