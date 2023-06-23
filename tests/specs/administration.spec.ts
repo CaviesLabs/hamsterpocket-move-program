@@ -60,7 +60,7 @@ describe("administration", function () {
 
     const [event] = await eventIndexer.getUpdateAllowedOperatorEvents({
       start: 0,
-      limit: 1,
+      limit: 1000,
     });
     expect(event.data.target).toEqual(signer.getAddress().hex());
     expect(event.data.value).toEqual(true);
@@ -88,7 +88,7 @@ describe("administration", function () {
 
     const [event] = await eventIndexer.getUpdateAllowedTargetEvents({
       start: 0,
-      limit: 1,
+      limit: 1000,
     });
     expect(event.data.target).toEqual(signer.getAddress().hex());
     expect(event.data.value).toEqual(true);
@@ -161,7 +161,7 @@ describe("administration", function () {
 
     const [event1, event2] = await eventIndexer.getUpdateAllowedAdminEvents({
       start: 0,
-      limit: 2,
+      limit: 1000,
     });
     expect(event1.data.target).toEqual(signer.getAddress().hex());
     expect(event1.data.value).toEqual(false);
