@@ -12,8 +12,7 @@ import { ProgramDeployer } from "../client/libs/program.deployer";
 async function main() {
   // resource account
   const addresses = {
-    programAddress:
-      "0x9ddf90dff89cc4c6f2cfb4e3d94758ef206b57ce9e2ba9071884a192bff7ff6a",
+    programAddress: process.env.PROGRAM_ADDRESS as string,
   };
 
   // construct deploy account
