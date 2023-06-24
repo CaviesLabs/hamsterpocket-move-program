@@ -232,7 +232,23 @@ module hamsterpocket::chef {
         signer: &signer,
         id: vector<u8>,
     ) {
-        close_pocket(signer, id);
+        let pocket_id = string::utf8(id);
+        let (
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            status
+        ) = pocket::get_trading_info(pocket_id);
+
+        if (status <= 0x1) {
+            // only close if the pocket status is active or paused
+            close_pocket(signer, id);
+        };
+
         withdraw<BaseCoin, TargetCoin>(signer, id);
     }
 
