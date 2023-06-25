@@ -646,7 +646,7 @@ export class TransactionBuilder {
     /**
      * @dev Build transaction
      */
-    return this.getViewExecutor<PocketResponseType[]>({
+    return this.getViewExecutor<[PocketResponseType[]]>({
       function: `${this.resourceAccount}::chef::get_multiple_pockets`,
       arguments: [
         params.idList.map((id) =>

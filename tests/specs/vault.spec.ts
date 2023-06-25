@@ -268,7 +268,7 @@ describe("vault", function () {
   });
 
   it("[vault] should: fetching multiple pockets should work", async () => {
-    const [pocket1, pocket2] = await txBuilder
+    const [[pocket1, pocket2]] = await txBuilder
       .buildGetMultiplePockets({
         idList: ["test-withdraw-pocket-id", "test-vault-pocket-data"],
       })
