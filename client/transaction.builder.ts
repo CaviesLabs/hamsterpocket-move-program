@@ -1,10 +1,11 @@
-import { HexString, TxnBuilderTypes, BCS } from "aptos";
+import { HexString, TxnBuilderTypes, BCS, Types } from "aptos";
 
 import {
   CreatePocketParams,
   CreateResourceAccountParams,
   DepositParams,
   ExecTradingParams,
+  GetMultiplePocketsParams,
   GetPocketParams,
   GetQuoteParams,
   ProgramUpgradeParams,
@@ -635,6 +636,25 @@ export class TransactionBuilder {
         )
       )
     );
+  }
+
+  /**
+   * @notice Build get multiple pockets
+   * @param params
+   */
+  public buildGetMultiplePockets(params: GetMultiplePocketsParams) {
+    /**
+     * @dev Build transaction
+     */
+    return this.getViewExecutor<PocketResponseType[]>({
+      function: `${this.resourceAccount}::chef::get_multiple_pockets`,
+      arguments: [
+        params.idList.map((id) =>
+          HexString.fromUint8Array(new TextEncoder().encode(id)).toString()
+        ),
+      ],
+      type_arguments: [],
+    });
   }
 
   /**

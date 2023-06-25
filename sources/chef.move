@@ -15,6 +15,7 @@ module hamsterpocket::chef {
     use hamsterpocket::platform;
     use hamsterpocket::vault;
     use hamsterpocket::event;
+    use std::vector;
 
     const DEPLOYER: address = @deployer;
     const HAMSTERPOCKET: address = @hamsterpocket;
@@ -646,6 +647,16 @@ module hamsterpocket::chef {
         return pocket::get_pocket(
             string::utf8(id)
         )
+    }
+
+    // get pocket data
+    #[view]
+    public fun get_multiple_pockets(id_list: vector<vector<u8>>): vector<pocket::Pocket> {
+        return vector::map(id_list, |id_bytes| {
+            pocket::get_pocket(
+                string::utf8(id_bytes)
+            )
+        })
     }
 
     // get pocket data

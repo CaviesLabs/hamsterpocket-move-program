@@ -266,4 +266,15 @@ describe("vault", function () {
     expect(pocket.base_coin_balance).toEqual(BigInt(0));
     expect(pocket.target_coin_balance).toEqual(BigInt(0));
   });
+
+  it("[vault] should: fetching multiple pockets should work", async () => {
+    const [pocket1, pocket2] = await txBuilder
+      .buildGetMultiplePockets({
+        idList: ["test-withdraw-pocket-id", "test-vault-pocket-data"],
+      })
+      .execute();
+
+    expect(pocket1.id).toEqual("test-withdraw-pocket-id");
+    expect(pocket2.id).toEqual("test-vault-pocket-data");
+  });
 });

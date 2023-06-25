@@ -54,6 +54,10 @@ export interface UpdatePocketParams {
   autoClosedConditions: [AutoCloseConditionClosedWith, bigint][];
 }
 
+export interface GetMultiplePocketsParams {
+  idList: string[];
+}
+
 export interface GetPocketParams {
   id: string;
 }

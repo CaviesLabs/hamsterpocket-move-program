@@ -157,7 +157,7 @@ describe("administration", function () {
      */
     await txBuilder
       .buildTransferAdminTransaction({
-        target: account.address().hex(),
+        target: account.address().toString(),
       })
       .execute();
 
