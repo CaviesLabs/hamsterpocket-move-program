@@ -29,8 +29,8 @@ describe("manage_pocket", function () {
     startAt: BigInt(parseInt((new Date().getTime() / 1000).toString())),
     openPositionCondition: [
       OpenPositionOperator.OPERATOR_NBW,
-      BigInt(0),
       BigInt(1),
+      BigInt(2),
     ],
     stopLossCondition: [StopConditionStoppedWith.UNSET, BigInt(0)],
     takeProfitCondition: [StopConditionStoppedWith.UNSET, BigInt(0)],
