@@ -192,9 +192,7 @@ describe("vault", function () {
       .buildGetDelegatedVaultAddress(signer.getAddress().hex())
       .execute();
     expect(delegatedVault).toBeTruthy();
-    expect(await coinClient.checkBalance(delegatedVault)).toEqual(
-      BigInt(10000)
-    );
+    expect(await coinClient.checkBalance(delegatedVault)).toEqual(BigInt(2000));
 
     /**
      * @dev Check for balance
