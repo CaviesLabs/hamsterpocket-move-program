@@ -108,10 +108,10 @@ describe("manage_pocket", function () {
       OpenPositionOperator.OPERATOR_NBW
     );
     expect(transformedPocket.open_position_condition.value_x).toEqual(
-      BigInt(0)
-    );
-    expect(transformedPocket.open_position_condition.value_x).toEqual(
       BigInt(1)
+    );
+    expect(transformedPocket.open_position_condition.value_y).toEqual(
+      BigInt(2)
     );
     expect(transformedPocket.auto_close_conditions.length).toEqual(1);
     expect(transformedPocket.auto_close_conditions[0].closed_with).toEqual(
