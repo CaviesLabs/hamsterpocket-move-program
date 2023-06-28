@@ -27,7 +27,11 @@ describe("manage_pocket", function () {
     batchVolume: BigInt(1000),
     frequency: BigInt(3600),
     startAt: BigInt(parseInt((new Date().getTime() / 1000).toString())),
-    openPositionCondition: [OpenPositionOperator.UNSET, BigInt(0), BigInt(0)],
+    openPositionCondition: [
+      OpenPositionOperator.OPERATOR_NBW,
+      BigInt(0),
+      BigInt(1),
+    ],
     stopLossCondition: [StopConditionStoppedWith.UNSET, BigInt(0)],
     takeProfitCondition: [StopConditionStoppedWith.UNSET, BigInt(0)],
     autoClosedConditions: [
@@ -101,13 +105,13 @@ describe("manage_pocket", function () {
     expect(transformedPocket.start_at).toEqual(pocketData.startAt);
     expect(transformedPocket.status).toEqual(PocketStatus.STATUS_ACTIVE);
     expect(transformedPocket.open_position_condition.operator).toEqual(
-      OpenPositionOperator.UNSET
+      OpenPositionOperator.OPERATOR_NBW
     );
     expect(transformedPocket.open_position_condition.value_x).toEqual(
       BigInt(0)
     );
     expect(transformedPocket.open_position_condition.value_x).toEqual(
-      BigInt(0)
+      BigInt(1)
     );
     expect(transformedPocket.auto_close_conditions.length).toEqual(1);
     expect(transformedPocket.auto_close_conditions[0].closed_with).toEqual(

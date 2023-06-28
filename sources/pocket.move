@@ -917,8 +917,8 @@ module hamsterpocket::pocket {
         if (comparison.operator == UNSET) return;
 
         if (comparison.operator == OPERATOR_BW || comparison.operator == OPERATOR_NBW) {
-            assert!(comparison.value_x >= comparison.value_y, error::invalid_state(INVALID_VALUE));
-            assert!(comparison.value_y > 0, error::invalid_state(ZERO_VALUE));
+            assert!(comparison.value_y >= comparison.value_x, error::invalid_state(INVALID_VALUE));
+            assert!(comparison.value_x > 0, error::invalid_state(ZERO_VALUE));
             return
         };
 
