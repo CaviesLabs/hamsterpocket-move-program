@@ -245,7 +245,7 @@ describe("vault", function () {
       limit: 1,
     });
     expect(event.data.id).toEqual(pocketData.id);
-    expect(Number(event.data.base_coin_amount)).toEqual(10000);
+    expect(Number(event.data.base_coin_amount)).toEqual(20000);
     expect(event.data.base_coin_type).toEqual("0x1::aptos_coin::AptosCoin");
     expect(Number(event.data.target_coin_amount)).toEqual(0);
     expect(event.data.target_coin_type).toEqual("0x1::aptos_coin::AptosCoin");
