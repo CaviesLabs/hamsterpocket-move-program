@@ -144,10 +144,10 @@ describe("vault", function () {
     /**
      * @dev Check for pocket stats
      */
-    let [untransformedPocket] = await txBuilder
+    const [untransformedPocket] = await txBuilder
       .buildGetPocket({ id: pocketData.id })
       .execute();
-    let pocket = transformPocketEntity(untransformedPocket);
+    const pocket = transformPocketEntity(untransformedPocket);
 
     expect(pocket.status).toEqual(PocketStatus.STATUS_ACTIVE);
     expect(pocket.base_coin_balance).toEqual(BigInt(10000));
@@ -165,14 +165,14 @@ describe("vault", function () {
       })
       .execute();
 
-    [untransformedPocket] = await txBuilder
+    const [untransformedPocket2] = await txBuilder
       .buildGetPocket({ id: pocketData.id })
       .execute();
-    pocket = transformPocketEntity(untransformedPocket);
+    const pocket2 = transformPocketEntity(untransformedPocket2);
 
-    expect(pocket.base_coin_balance).toEqual(BigInt(20000));
-    expect(pocket.target_coin_balance).toEqual(BigInt(0));
-    expect(pocket.total_deposited_base_amount).toEqual(BigInt(20000));
+    expect(pocket2.base_coin_balance).toEqual(BigInt(20000));
+    expect(pocket2.target_coin_balance).toEqual(BigInt(0));
+    expect(pocket2.total_deposited_base_amount).toEqual(BigInt(20000));
 
     // create pocket
     const [event] = await eventIndexer.getUpdateDepositStats({
