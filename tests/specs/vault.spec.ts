@@ -152,6 +152,7 @@ describe("vault", function () {
     expect(pocket.status).toEqual(PocketStatus.STATUS_ACTIVE);
     expect(pocket.base_coin_balance).toEqual(BigInt(10000));
     expect(pocket.target_coin_balance).toEqual(BigInt(0));
+    expect(pocket.total_deposited_base_amount).toEqual(BigInt(10000));
 
     /**
      * @dev Now we deposit to created pocket
@@ -171,6 +172,7 @@ describe("vault", function () {
 
     expect(pocket.base_coin_balance).toEqual(BigInt(20000));
     expect(pocket.target_coin_balance).toEqual(BigInt(0));
+    expect(pocket.total_deposited_base_amount).toEqual(BigInt(20000));
 
     // create pocket
     const [event] = await eventIndexer.getUpdateDepositStats({
