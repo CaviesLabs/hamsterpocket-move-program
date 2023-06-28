@@ -1,4 +1,8 @@
+import { TxnBuilderTypes } from "aptos";
+
 import { PocketResponseType } from "../response.type";
+
+const { AccountAddress } = TxnBuilderTypes;
 
 export enum PocketStatus {
   STATUS_ACTIVE = 0x0,
@@ -84,7 +88,7 @@ export const transformPocketEntity = (
     id: entity.id,
     base_coin_type: entity.base_coin_type,
     target_coin_type: entity.target_coin_type,
-    owner: entity.owner,
+    owner: AccountAddress.fromHex(entity.owner).toHexString() as string,
     base_coin_balance: BigInt(entity.base_coin_balance),
     target_coin_balance: BigInt(entity.target_coin_balance),
     batch_volume: BigInt(entity.batch_volume),
