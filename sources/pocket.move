@@ -325,7 +325,7 @@ module hamsterpocket::pocket {
     ) acquires PocketStore, ResourceAccountStore {
         let pocket = &mut get_pocket(id);
 
-        pocket.total_deposited_base_amount = amount;
+        pocket.total_deposited_base_amount = pocket.total_deposited_base_amount + amount;
         pocket.base_coin_balance = pocket.base_coin_balance + amount;
 
         // commit data changes

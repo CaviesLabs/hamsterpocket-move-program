@@ -144,13 +144,32 @@ describe("vault", function () {
     /**
      * @dev Check for pocket stats
      */
-    const [untransformedPocket] = await txBuilder
+    let [untransformedPocket] = await txBuilder
       .buildGetPocket({ id: pocketData.id })
       .execute();
-    const pocket = transformPocketEntity(untransformedPocket);
+    let pocket = transformPocketEntity(untransformedPocket);
 
     expect(pocket.status).toEqual(PocketStatus.STATUS_ACTIVE);
     expect(pocket.base_coin_balance).toEqual(BigInt(10000));
+    expect(pocket.target_coin_balance).toEqual(BigInt(0));
+
+    /**
+     * @dev Now we deposit to created pocket
+     */
+    await txBuilder
+      .buildDepositTransaction({
+        coinType: "0x1::aptos_coin::AptosCoin",
+        amount: BigInt(10000),
+        id: pocketData.id,
+      })
+      .execute();
+
+    [untransformedPocket] = await txBuilder
+      .buildGetPocket({ id: pocketData.id })
+      .execute();
+    pocket = transformPocketEntity(untransformedPocket);
+
+    expect(pocket.base_coin_balance).toEqual(BigInt(20000));
     expect(pocket.target_coin_balance).toEqual(BigInt(0));
 
     // create pocket
