@@ -94,9 +94,9 @@ Hamsterpocket (Pocket) is an Open Source self-managed dollar-cost-averaging prot
 ## **Getting started** 🚀
 
 ### **Step 0. Deployed Contracts addresses** 📢
-| Mainnet | Devnet |
+| Mainnet | Testnet |
 |---------|--------|
-| n/a     | n/a    |
+| 0x18016fbfb14d8bd4c3ed965fb8981dcfa9d9b5278c05fee423d1d67624806382     | 0xa07d4b78db6fb9b829f157eb91d202a47959b3930abd93b3c29a828bc76d4af4    |
 
 ### **Step 1: Clone this repo** 🧰
 Create a new Hamsterpocket project with Open Source integration in just a few steps.
